@@ -23,7 +23,219 @@ var FIREBASE_CONFIG = {
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
-<link rel="stylesheet" href="style.css">
+<style>
+/* ===== TOSS STYLE ===== */
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR','Apple SD Gothic Neo',sans-serif;font-size:16px;background:#F2F4F6;color:#191F28;-webkit-font-smoothing:antialiased;}
+input,select,textarea,button{font-family:inherit;font-size:inherit;}
+button{cursor:pointer;}
+a{color:#3EB489;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-thumb{background:#D1EAE0;border-radius:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+:root{--mint:#3EB489;--mintl:#E8F7F0;--mintm:#B8E8D4;--mintb:#F4FAF7;--br:#E8EDF2;--mu:#6B7684;--h:#B0B8C1;--card:#FFFFFF;--text1:#191F28;--text2:#4E5968;--text3:#8B95A1;}
+#app{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+.header{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:56px;background:var(--mint);color:#fff;flex-shrink:0;}
+.header-left{display:flex;align-items:center;gap:10px;}
+.header-title{font-size:17px;font-weight:700;letter-spacing:-0.5px;}
+.header-badge{font-size:11px;background:rgba(255,255,255,0.2);padding:3px 9px;border-radius:20px;font-weight:500;}
+.header-center{display:flex;align-items:center;gap:6px;}
+.save-status{font-size:12px;color:rgba(255,255,255,0.8);}
+.header-right{display:flex;gap:8px;align-items:center;}
+.btn-header{border:none;color:#fff;padding:6px 13px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:500;}
+.btn-cal{background:rgba(255,255,255,0.2);}
+.btn-add{background:#fff;color:var(--mint);font-weight:700;}
+.btn-logout{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);font-size:12px;padding:5px 11px;}
+.user-avatar{width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,0.6);object-fit:cover;}
+.user-name{font-size:13px;color:rgba(255,255,255,0.95);font-weight:500;}
+.body{display:flex;flex:1;overflow:hidden;}
+.sidebar{width:68px;display:flex;flex-direction:column;border-right:1px solid var(--br);background:#fff;flex-shrink:0;padding-top:8px;}
+.nav-btn{padding:10px 4px;border:none;border-right:3px solid transparent;background:transparent;display:flex;flex-direction:column;align-items:center;gap:4px;width:100%;cursor:pointer;transition:all 0.15s;}
+.nav-btn:hover{background:#F8F9FA;}
+.nav-btn.active{border-right-color:var(--mint);background:var(--mintl);}
+.nav-icon{font-size:18px;line-height:1;}
+.nav-label{font-size:9px;text-align:center;line-height:1.3;font-weight:500;}
+.page{display:flex;flex:1;overflow:hidden;}
+.left{width:260px;display:flex;flex-direction:column;border-right:1px solid var(--br);background:#fff;overflow:hidden;flex-shrink:0;}
+.search-box{padding:12px;border-bottom:1px solid var(--br);}
+.search-box input{width:100%;padding:9px 13px;border:1.5px solid var(--br);border-radius:10px;font-size:14px;background:#F8F9FA;outline:none;transition:all 0.15s;}
+.search-box input:focus{border-color:var(--mint);background:#fff;}
+.list-area{overflow-y:auto;flex:1;padding:8px 10px;}
+.filter-panel{border-bottom:1px solid var(--br);background:#F8F9FA;}
+.filter-inner{padding:10px 12px 0;}
+.flabel{font-size:11px;color:var(--mu);font-weight:700;margin-bottom:5px;letter-spacing:0.3px;}
+.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.cat-btn{text-align:left;padding:7px 9px;border-radius:9px;border:1.5px solid var(--br);background:#fff;cursor:pointer;transition:all 0.12s;}
+.cat-btn:hover{border-color:var(--mintm);}
+.cat-name{font-size:12px;font-weight:600;}
+.cat-cnt{font-size:10px;padding:1px 6px;border-radius:10px;}
+.chip{font-size:11px;padding:4px 10px;border-radius:20px;border:1.5px solid var(--br);background:#fff;cursor:pointer;transition:all 0.12s;font-weight:500;}
+.chip:hover{border-color:var(--mintm);}
+.sort-row{padding:4px 12px 10px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.job-card{padding:12px;margin-bottom:6px;border-radius:12px;border:1.5px solid var(--br);background:#fff;cursor:pointer;transition:all 0.15s;}
+.job-card:hover{border-color:var(--mintm);box-shadow:0 2px 8px rgba(62,180,137,0.1);}
+.job-card.sel{border-color:var(--mint);background:var(--mintl);box-shadow:0 2px 12px rgba(62,180,137,0.15);}
+.card-co{font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text1);}
+.card-role{font-size:13px;color:var(--mu);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;}
+.pill{font-size:11px;padding:3px 9px;border-radius:20px;white-space:nowrap;font-weight:600;}
+.card-row{display:flex;justify-content:space-between;margin-top:6px;align-items:center;}
+.card-date{font-size:12px;color:var(--h);}
+.resizer{width:4px;background:transparent;cursor:col-resize;flex-shrink:0;position:relative;transition:background 0.15s;}
+.resizer:hover,.resizer.dragging{background:var(--mint);}
+.right{flex:1;display:flex;flex-direction:column;background:#F2F4F6;overflow:hidden;min-width:0;}
+.rhdr{padding:14px 18px;background:#fff;border-bottom:1px solid var(--br);flex-shrink:0;}
+.rhdr-row{display:flex;align-items:flex-start;justify-content:space-between;}
+.r-actions{display:flex;gap:6px;flex-shrink:0;align-items:center;}
+.btn-sm{border:1.5px solid var(--mintm);background:var(--mintb);color:var(--mint);padding:6px 12px;border-radius:8px;font-size:13px;font-weight:600;}
+.btn-sm:hover{background:var(--mintl);}
+.btn-danger{border-color:#FFD6D6;background:#FFF5F5;color:#E53E3E;}
+.tabs{display:flex;background:#fff;border-bottom:1px solid var(--br);padding:0 18px;flex-shrink:0;gap:4px;}
+.tab{padding:12px 14px;border:none;background:transparent;font-size:14px;border-bottom:2.5px solid transparent;color:var(--h);font-weight:500;cursor:pointer;transition:all 0.15s;}
+.tab.active{border-bottom-color:var(--mint);color:var(--mint);font-weight:700;}
+.tcontent{flex:1;overflow-y:auto;padding:16px;}
+.cbox{background:#fff;border-radius:14px;border:1px solid var(--br);padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04);}
+.cbox-title{font-size:13px;color:var(--mu);font-weight:700;margin-bottom:10px;}
+.flabel2{font-size:12px;color:var(--h);margin-bottom:4px;font-weight:500;}
+textarea,input[type=text],input[type=url],input[type=date],input[type=time],input[type=number]{background:#F8F9FA;border:1.5px solid var(--br);border-radius:10px;padding:10px 13px;font-size:14px;outline:none;width:100%;transition:all 0.15s;color:var(--text1);}
+textarea:focus,input:focus{border-color:var(--mint);background:#fff;}
+textarea{resize:vertical;line-height:1.7;}
+.char-count{font-size:11px;color:var(--h);margin-top:4px;font-weight:500;}
+.cover-item{background:#fff;border-radius:14px;border:1.5px solid var(--br);padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04);}
+.cover-item.dirty{border-color:#FFE082;background:#FFFDF0;}
+.cover-item-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.cover-num{font-size:11px;background:var(--mintl);color:var(--mint);padding:3px 10px;border-radius:20px;font-weight:700;white-space:nowrap;}
+.cover-q-input{flex:1;border:none;border-bottom:1.5px solid var(--br);padding:3px 5px;font-size:14px;outline:none;background:transparent;font-weight:600;color:var(--text1);min-width:0;}
+.cover-q-input:focus{border-bottom-color:var(--mint);}
+.cover-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.cover-save-btn{border:none;background:var(--mint);color:#fff;padding:5px 11px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;}
+.cover-save-btn:disabled{background:var(--mintm);cursor:default;}
+.btn-del-cover{border:none;background:#FFF5F5;color:#E53E3E;padding:5px 9px;border-radius:7px;font-size:11px;cursor:pointer;font-weight:600;}
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(16px);background:#191F28;color:#fff;padding:12px 20px;border-radius:12px;font-size:14px;opacity:0;transition:opacity 0.2s,transform 0.2s;pointer-events:none;z-index:999;display:flex;align-items:center;gap:8px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2);}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+#toast .tick{color:var(--mint);font-size:16px;}
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(25,31,40,0.5);z-index:200;display:flex;align-items:center;justify-content:center;}
+.modal{background:#fff;border-radius:20px;padding:24px;width:400px;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.15);}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.modal-close{border:none;background:#F2F4F6;width:28px;height:28px;border-radius:50%;color:var(--mu);font-size:16px;line-height:1;font-weight:600;}
+.modal-ftr{display:flex;gap:8px;margin-top:20px;}
+.btn-cancel-m{flex:1;padding:12px;border:1.5px solid var(--br);border-radius:12px;background:#F8F9FA;color:var(--mu);font-size:14px;font-weight:600;}
+.btn-save-m{flex:2;padding:12px;border:none;border-radius:12px;background:var(--mint);color:#fff;font-size:14px;font-weight:700;}
+.mfield{margin-bottom:14px;}
+.mlabel{font-size:13px;color:var(--mu);font-weight:600;margin-bottom:6px;}
+.minput{width:100%;padding:11px 14px;border:1.5px solid var(--br);border-radius:10px;font-size:14px;outline:none;background:#F8F9FA;color:var(--text1);transition:all 0.15s;}
+.minput:focus{border-color:var(--mint);background:#fff;}
+.cal-wrap{flex:1;display:flex;flex-direction:column;background:#fff;padding:20px 24px;overflow:hidden;}
+.cal-nav{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.cal-nbtn{border:none;background:#F2F4F6;color:var(--text1);font-size:18px;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.1s;}
+.cal-nbtn:hover{background:var(--mintl);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.cal-dh{font-size:13px;text-align:center;color:var(--h);padding:6px 0;font-weight:700;}
+.cal-cell{min-height:90px;padding:8px;border:1.5px solid var(--br);border-radius:12px;background:#fff;transition:border-color 0.1s;}
+.cal-cell:hover{border-color:var(--mintm);}
+.cal-cell.today{background:var(--mintl);border-color:var(--mint);}
+.cal-ev{font-size:11px;padding:3px 7px;border-radius:6px;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;font-weight:600;}
+.cal-ev:hover{opacity:0.75;}
+.cal-ev.dl{background:#D1FAE5;color:#065F46;}
+.cal-ev.iv{background:#FEF3C7;color:#92400E;}
+.star-block{background:#fff;border-radius:14px;border:1.5px solid var(--br);overflow:hidden;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04);}
+.star-head{padding:10px 14px;border-bottom:1px solid var(--br);}
+.star-body{padding:12px 14px;font-size:14px;line-height:1.8;white-space:pre-wrap;color:var(--text2);}
+.pass-card{background:#fff;border-radius:14px;border:1.5px solid var(--mintm);padding:14px;margin-bottom:8px;cursor:pointer;transition:all 0.15s;box-shadow:0 1px 3px rgba(62,180,137,0.08);}
+.pass-card:hover{border-color:var(--mint);box-shadow:0 3px 12px rgba(62,180,137,0.15);}
+.pass-card.sel{border-color:var(--mint);background:var(--mintl);}
+.pass-badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:3px 9px;background:#D1FAE5;color:#065F46;border-radius:20px;font-weight:700;}
+.cl-view-box{background:#fff;border-radius:14px;border:1.5px solid var(--br);padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04);}
+.cl-q-label{font-size:13px;font-weight:700;color:var(--text1);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.cl-q-num{font-size:11px;background:var(--mintl);color:var(--mint);padding:3px 10px;border-radius:20px;font-weight:700;}
+.cl-answer{font-size:14px;line-height:1.8;white-space:pre-wrap;color:var(--text2);background:#F8F9FA;border-radius:10px;padding:13px 15px;}
+.cl-meta{font-size:11px;color:var(--h);margin-top:8px;display:flex;justify-content:space-between;font-weight:500;}
+.analysis-full{position:fixed;inset:0;background:#F2F4F6;z-index:300;display:flex;flex-direction:column;}
+.analysis-full-header{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--br);background:#fff;flex-shrink:0;}
+.analysis-full-content{flex:1;overflow-y:auto;padding:24px;max-width:860px;margin:0 auto;width:100%;}
+.analysis-tab-row{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;}
+.analysis-tab{padding:9px 18px;border-radius:20px;border:1.5px solid var(--br);background:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.15s;color:var(--mu);}
+.analysis-tab.active{background:var(--mint);color:#fff;border-color:var(--mint);}
+.analysis-tab:hover:not(.active){border-color:var(--mintm);color:var(--mint);}
+.empty{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;flex:1;}
+.empty-icon{font-size:36px;opacity:0.15;}
+.no-sel{color:var(--h);font-size:13px;text-align:center;padding:24px 12px;line-height:1.8;font-weight:500;}
+.del-confirm{display:flex;align-items:center;gap:6px;}
+#login-screen{display:none;position:fixed;inset:0;background:linear-gradient(135deg,#E8F7F0 0%,#F4FAF7 50%,#fff 100%);z-index:500;flex-direction:column;align-items:center;justify-content:center;}
+#login-screen.visible{display:flex;}
+.login-card{background:#fff;border-radius:24px;padding:48px 44px;box-shadow:0 8px 48px rgba(62,180,137,0.12);width:380px;text-align:center;}
+.login-logo{font-size:48px;margin-bottom:14px;}
+.login-title{font-size:24px;font-weight:800;color:var(--text1);margin-bottom:8px;letter-spacing:-0.7px;}
+.login-sub{font-size:15px;color:var(--mu);margin-bottom:36px;line-height:1.65;}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:14px;border:1.5px solid #E8EDF2;border-radius:12px;background:#fff;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.15s;color:var(--text1);}
+.btn-google:hover{border-color:var(--mintm);background:var(--mintl);}
+.google-icon{width:22px;height:22px;}
+.login-notice{font-size:12px;color:var(--h);margin-top:18px;line-height:1.7;}
+#loading-screen{display:none;position:fixed;inset:0;background:#F2F4F6;z-index:400;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+#loading-screen.visible{display:flex;}
+.spinner{width:40px;height:40px;border:3px solid var(--mintm);border-top-color:var(--mint);border-radius:50%;animation:spin 0.75s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-txt{font-size:15px;color:var(--mu);font-weight:500;}
+.syncing{font-size:12px;color:rgba(255,255,255,0.8);display:flex;align-items:center;gap:5px;font-weight:500;}
+.syncing-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.8);animation:blink 1s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:0.3;}50%{opacity:1;}}
+
+/* ===== STUDY TAB ===== */
+.study-layout{display:flex;flex:1;overflow:hidden;}
+.study-left{width:220px;flex-shrink:0;border-right:1px solid var(--br);background:#fff;display:flex;flex-direction:column;overflow:hidden;}
+.study-right{flex:1;display:flex;flex-direction:column;background:#F2F4F6;overflow:hidden;min-width:0;}
+.study-card{margin:6px 10px;padding:12px;border-radius:12px;border:1.5px solid var(--br);background:#fff;cursor:pointer;transition:all 0.15s;}
+.study-card:hover{border-color:var(--mintm);box-shadow:0 2px 8px rgba(62,180,137,0.1);}
+.study-card.sel{border-color:var(--mint);background:var(--mintl);}
+.study-card-name{font-weight:700;font-size:14px;color:var(--text1);margin-bottom:3px;}
+.study-card-meta{font-size:11px;color:var(--mu);}
+.study-btn-row{display:flex;gap:6px;padding:10px;}
+.study-btn{flex:1;padding:8px 0;border-radius:9px;border:1.5px solid var(--mintm);background:var(--mintb);color:var(--mint);font-size:12px;font-weight:700;cursor:pointer;transition:all 0.15s;}
+.study-btn:hover{background:var(--mintl);}
+.study-btn.primary{background:var(--mint);color:#fff;border-color:var(--mint);}
+.study-btn.primary:hover{background:#33a478;}
+.study-tabs{display:flex;background:#fff;border-bottom:1px solid var(--br);padding:0 16px;gap:4px;flex-shrink:0;}
+.study-tab{padding:11px 14px;border:none;background:transparent;font-size:13px;border-bottom:2.5px solid transparent;color:var(--h);font-weight:500;cursor:pointer;transition:all 0.15s;}
+.study-tab.active{border-bottom-color:var(--mint);color:var(--mint);font-weight:700;}
+.timer-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;gap:20px;}
+.timer-display{font-size:52px;font-weight:800;letter-spacing:2px;color:var(--text1);font-variant-numeric:tabular-nums;line-height:1;}
+.timer-display.running{color:var(--mint);}
+.timer-display.paused{color:var(--h);}
+.timer-btn{padding:12px 36px;border-radius:40px;border:none;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.15s;}
+.timer-start{background:var(--mint);color:#fff;}
+.timer-start:hover{background:#33a478;}
+.timer-stop{background:#FEE2E2;color:#DC2626;}
+.timer-stop:hover{background:#FECACA;}
+.timer-today{font-size:13px;color:var(--mu);background:#fff;border:1px solid var(--br);border-radius:10px;padding:8px 18px;}
+.todo-section{background:#fff;border-radius:14px;border:1px solid var(--br);padding:14px;margin-bottom:12px;}
+.todo-section-title{font-size:12px;font-weight:700;color:var(--mu);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.todo-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--br);}
+.todo-item:last-child{border-bottom:none;}
+.todo-item input[type=checkbox]{width:16px;height:16px;accent-color:var(--mint);cursor:pointer;flex-shrink:0;}
+.todo-item-text{flex:1;font-size:13px;color:var(--text1);}
+.todo-item-text.done{text-decoration:line-through;color:var(--h);}
+.todo-del{border:none;background:none;color:var(--h);font-size:14px;cursor:pointer;padding:2px 5px;border-radius:4px;}
+.todo-del:hover{color:#DC2626;background:#FEE2E2;}
+.todo-input-row{display:flex;gap:6px;margin-top:8px;}
+.todo-input{flex:1;padding:8px 11px;border:1.5px solid var(--br);border-radius:9px;font-size:13px;outline:none;background:#F8F9FA;color:var(--text1);}
+.todo-input:focus{border-color:var(--mint);background:#fff;}
+.todo-add-btn{padding:8px 13px;border:none;border-radius:9px;background:var(--mint);color:#fff;font-size:12px;font-weight:700;cursor:pointer;}
+.qa-card{background:#fff;border-radius:12px;border:1px solid var(--br);padding:13px;margin-bottom:8px;cursor:pointer;transition:all 0.15s;}
+.qa-card:hover{border-color:var(--mintm);}
+.qa-card.sel{border-color:var(--mint);background:var(--mintl);}
+.qa-title{font-size:14px;font-weight:600;color:var(--text1);margin-bottom:4px;}
+.qa-meta{font-size:11px;color:var(--h);}
+.qa-tag{font-size:10px;padding:2px 8px;background:var(--mintl);color:var(--mint);border-radius:20px;border:1px solid var(--mintm);font-weight:600;}
+.answer-box{background:#F8F9FA;border-radius:10px;border:1px solid var(--br);padding:12px;margin-bottom:8px;}
+.answer-box.accepted{border-color:var(--mint);background:var(--mintl);}
+.answer-meta{font-size:11px;color:var(--h);margin-top:6px;display:flex;justify-content:space-between;align-items:center;}
+.invite-badge{font-size:13px;background:#F0FDF4;border:1.5px solid var(--mintm);border-radius:10px;padding:8px 14px;color:var(--mint);font-weight:700;letter-spacing:2px;cursor:pointer;transition:all 0.15s;}
+.invite-badge:hover{background:var(--mintl);}
+.study-modal-overlay{position:fixed;inset:0;background:rgba(25,31,40,0.5);z-index:300;display:flex;align-items:center;justify-content:center;}
+.study-modal{background:#fff;border-radius:20px;padding:24px;width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.15);}
+.study-modal-title{font-size:16px;font-weight:700;margin-bottom:16px;color:var(--text1);}
+.study-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:40px 20px;color:var(--h);font-size:13px;text-align:center;}
+
+</style>
 </head>
 <body>
 
@@ -104,6 +316,7 @@ async function loadFromFirestore(){
   }
   showLoading(false); showApp(true);
   render();
+  loadMyStudies();
 }
 
 var saveTimer = null;
@@ -178,6 +391,7 @@ var NAV=[
   {id:'articles',label:'기사',sym:'◫'},
   {id:'experience',label:'경험',sym:'◈'},
   {id:'passbank',label:'합격자소서',sym:'★'},
+  {id:'study',label:'스터디',sym:'⏱'},
 ];
 var STAR_KEYS=[
   {k:'situation',l:'상황 (Situation)',c:'#1D4ED8',cb:'#EFF6FF',ph:'어떤 상황이었나요?'},
@@ -196,6 +410,14 @@ var state={
   selArt:null,editArt:null,selExp:null,editExp:null,
   lastSaved:null,dirty:{},leftW:260,
   analysisJob:null,analysisTab:'ia',
+  studyTab:'timer',myStudies:[],selStudy:null,
+  timerRunning:false,timerPaused:false,timerElapsed:0,timerSessionId:null,timerInterval:null,
+  timerSessions:[],
+  sharedTodos:[],personalTodos:[],
+  posts:[],selPost:null,showQAForm:false,showAnsForm:false,
+  studyModal:null,studyMembers:{},
+  studyCalY:new Date().getFullYear(),studyCalM:new Date().getMonth(),
+  _studyUnsub:[],
 };
 
 /* ====== SAVE (replaces localStorage) ====== */
@@ -316,6 +538,7 @@ function buildPage(){
   if(state.page==='articles')return buildArtsPage();
   if(state.page==='experience')return buildExpPage();
   if(state.page==='passbank')return buildPassBank();
+  if(state.page==='study')return buildStudyPage();
   return '';
 }
 
@@ -377,8 +600,1473 @@ function buildCard(job){
   '</div>';
 }
 
-// ... remainder omitted for brevity in this restoration snippet ...
+/* ====== RIGHT PANEL ====== */
+function buildRight(){
+  var job=state.jobs.find(j=>j.id===state.selId);
+  if(!job)return '<div class="right"><div class="empty"><div class="empty-icon">≡</div><div>공고를 선택하거나 새로 추가하세요</div><button onclick="openAdd()" style="background:'+M+';color:#fff;border:none;padding:7px 16px;border-radius:8px;font-size:12px;margin-top:4px;cursor:pointer;">+ 새 공고 추가</button></div></div>';
+  var st=gs(job.status),dd=dday(job.deadline,job.deadlineTime);
+  return '<div class="right">'+
+    '<div class="rhdr">'+
+      '<div class="rhdr-row">'+
+        '<div style="flex:1;min-width:0;">'+
+          '<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:2px;">'+
+            '<span style="font-size:15px;font-weight:600;">'+esc(job.company)+'</span>'+
+            '<span class="pill" style="background:'+st.bg+';color:'+st.c+'">'+st.label+'</span>'+
+            (dd.label?'<span style="font-size:11px;font-weight:600;color:'+dd.color+'">'+dd.label+'</span>':'')+
+          '</div>'+
+          '<div style="font-size:11px;color:'+MU+'">'+esc(job.role)+(job.industry?' · '+esc(job.industry):'')+'</div>'+
+        '</div>'+
+        '<div class="r-actions">'+
+          '<button class="btn-sm" onclick="openEdit()">수정</button>'+
+          (state.delConfirm?
+            '<span class="del-confirm"><span style="color:#DC2626;font-size:11px;">삭제?</span><button onclick="deleteJob()" style="border:none;background:#DC2626;color:#fff;padding:3px 7px;border-radius:5px;font-size:10px;cursor:pointer;">삭제</button><button onclick="cancelDel()" style="border:1px solid '+BR+';background:#fff;color:'+MU+';padding:3px 7px;border-radius:5px;font-size:10px;cursor:pointer;">취소</button></span>':
+            '<button class="btn-sm btn-danger" onclick="startDel()">삭제</button>'
+          )+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="tabs">'+
+      ['기본정보','기업분석','자기소개서'].map(t=>'<button class="tab'+(state.tab===t?' active':'')+'" onclick="setTab(\''+t+'\')">'+t+'</button>').join('')+
+    '</div>'+
+    '<div class="tcontent">'+
+      (state.tab==='기본정보'?buildBasic(job):'')+
+      (state.tab==='기업분석'?buildAnalysis(job):'')+
+      (state.tab==='자기소개서'?buildCoverTab(job):'')+
+    '</div>'+
+  '</div>';
+}
+
+/* ====== BASIC TAB ====== */
+function buildBasic(job){
+  return '<div>'+
+    '<div class="cbox">'+
+      '<div class="cbox-title">진행 상태</div>'+
+      CATS.filter(c=>c.statuses).map(cat=>
+        '<div style="margin-bottom:8px;">'+
+          '<div style="font-size:8px;padding:1px 6px;background:'+cat.abg+';color:'+cat.ac+';border-radius:8px;display:inline-block;margin-bottom:4px;font-weight:600;">'+cat.label+'</div>'+
+          '<div style="display:flex;flex-wrap:wrap;gap:3px;">'+
+            cat.statuses.map(sid=>{var s=gs(sid),on=job.status===sid;return'<button onclick="setStatus(\''+sid+'\')" style="font-size:10px;padding:3px 10px;border-radius:20px;border:1.5px solid '+(on?s.c:BR)+';background:'+(on?s.bg:'#fff')+';color:'+s.c+';cursor:pointer;">'+(on?'✓ ':'')+s.label+'</button>';}).join('')+
+          '</div>'+
+        '</div>'
+      ).join('')+
+    '</div>'+
+    '<div class="cbox">'+
+      '<div class="cbox-title">마감 & 일정</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:8px;">'+
+        '<div><div class="flabel2">마감일</div><div style="font-size:12px;">'+(job.deadline?fd(job.deadline):'-')+'</div></div>'+
+        '<div><div class="flabel2">마감시간</div><div style="font-size:12px;">'+(job.deadlineTime?fmt12(job.deadlineTime):'-')+'</div></div>'+
+        '<div><div class="flabel2">D-day</div><div style="font-size:12px;font-weight:600;color:'+dday(job.deadline,job.deadlineTime).color+'">'+(dday(job.deadline,job.deadlineTime).label||'-')+'</div></div>'+
+      '</div>'+
+      ((job.interviews||[]).length?'<div style="border-top:1px solid '+BR+';padding-top:8px;"><div class="flabel2">면접 일정</div>'+job.interviews.map(d=>'<span style="font-size:10px;padding:2px 8px;background:#FEF3C7;border-radius:5px;color:#92400E;display:inline-block;margin:0 4px 4px 0;">'+fd(d)+'</span>').join('')+'</div>':'')+
+    '</div>'+
+    buildSavableSite(job)+
+    buildSavableField('JD','채용공고 내용 (JD)','ta-jd','jd',job,6,'자격요건, 우대사항, 주요업무 등을 정리해두세요.')+
+    buildSavableField('MEMO','메모','ta-memo','memo',job,3,'메모...')+
+  '</div>';
+}
+
+/* ====== ANALYSIS TAB ====== */
+function buildAnalysis(job){
+  var TABS=[{k:'ia',l:'산업 분석',ph:'해당 산업의 트렌드, 규모, 주요 이슈 등'},{k:'ca',l:'기업 분석',ph:'기업의 사업모델, 강점, 최근 동향 등'},{k:'ja',l:'직무 분석',ph:'직무가 하는 일, 필요 역량, 커리어 경로 등'}];
+  var at=state.analysisTab||'ia';
+  var cur=TABS.find(t=>t.k===at)||TABS[0];
+  return '<div>'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'+
+      '<div class="analysis-tab-row" style="margin:0;flex:1;">'+
+        TABS.map(t=>'<button class="analysis-tab'+(at===t.k?' active':'')+'" onclick="state.analysisTab=\''+t.k+'\';render()">'+t.l+'</button>').join('')+
+      '</div>'+
+      '<button onclick="openAnalysisFull('+job.id+')" style="border:1.5px solid var(--mintm);background:var(--mintb);color:var(--mint);padding:7px 13px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;margin-left:10px;">전체화면 ↗</button>'+
+    '</div>'+
+    buildSavableField(cur.k.toUpperCase(),cur.l,'ta-'+cur.k,cur.k,job,12,cur.ph)+
+  '</div>';
+}
+
+/* ====== ANALYSIS FULL SCREEN ====== */
+function openAnalysisFull(jobId){state.analysisJob=jobId;render();}
+function closeAnalysisFull(){state.analysisJob=null;render();}
+
+function buildAnalysisFull(){
+  var job=state.jobs.find(j=>j.id===state.analysisJob);if(!job)return'';
+  var TABS=[{k:'ia',l:'산업 분석',ph:'해당 산업의 트렌드, 규모, 주요 이슈 등'},{k:'ca',l:'기업 분석',ph:'기업의 사업모델, 강점, 최근 동향 등'},{k:'ja',l:'직무 분석',ph:'직무가 하는 일, 필요 역량, 커리어 경로 등'}];
+  var at=state.analysisTab||'ia';
+  var cur=TABS.find(t=>t.k===at)||TABS[0];
+  return '<div class="analysis-full">'+
+    '<div class="analysis-full-header">'+
+      '<div>'+
+        '<div style="font-size:17px;font-weight:700;">'+esc(job.company)+' — 기업 분석</div>'+
+        '<div style="font-size:13px;color:var(--mu);margin-top:2px;">'+esc(job.role)+'</div>'+
+      '</div>'+
+      '<button onclick="closeAnalysisFull()" style="border:1.5px solid var(--br);background:#F8F9FA;color:var(--mu);padding:8px 16px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">✕ 닫기</button>'+
+    '</div>'+
+    '<div class="analysis-full-content">'+
+      '<div class="analysis-tab-row">'+
+        TABS.map(t=>'<button class="analysis-tab'+(at===t.k?' active':'')+'" onclick="state.analysisTab=\''+t.k+'\';render()">'+t.l+'</button>').join('')+
+      '</div>'+
+      buildSavableField(cur.k.toUpperCase(),cur.l,'ta-'+cur.k,cur.k,job,22,cur.ph)+
+    '</div>'+
+  '</div>';
+}
+
+/* ====== SAVABLE FIELD HELPERS ====== */
+function buildSavableSite(job){
+  var dk=job.id+'_siteUrl';var isDirty=!!state.dirty[dk];var url=job.siteUrl||'';
+  return '<div class="cbox" id="box-'+dk+'" style="'+(isDirty?'border-color:#FDE68A;background:#FEFDF5;':'')+'">'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">'+
+      '<span class="cbox-title" style="margin:0">지원 사이트</span>'+
+      '<div style="display:flex;align-items:center;gap:6px;">'+
+        (isDirty?'<span style="font-size:9px;color:#D97706;">● 저장 안 됨</span>':'')+
+        '<button id="savebtn-'+dk+'" class="btn-sm" style="'+(isDirty?'background:var(--mint);color:#fff;':'opacity:0.4;cursor:default;')+'" onclick="saveSiteUrl(\''+dk+'\')"'+(isDirty?'':' disabled')+'>저장</button>'+
+      '</div>'+
+    '</div>'+
+    '<div style="display:flex;align-items:center;gap:7px;">'+
+      '<input id="inp-siteUrl" type="url" placeholder="https://careers.kakao.com" value="'+esc(url)+'" oninput="markDirtySite(\''+dk+'\')" style="flex:1;">'+
+      (url?'<a href="'+esc(url)+'" target="_blank" style="flex-shrink:0;font-size:11px;padding:5px 10px;border:1px solid '+MM+';border-radius:6px;background:'+ML+';text-decoration:none;color:'+M+';white-space:nowrap;">바로가기 ↗</a>':'')+
+    '</div>'+
+  '</div>';
+}
+function buildSavableField(uid,label,taId,field,job,rows,ph){
+  var dk=job.id+'_'+field;var isDirty=!!state.dirty[dk];
+  return '<div class="cbox" id="box-'+dk+'" style="'+(isDirty?'border-color:#FDE68A;background:#FEFDF5;':'')+'">'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">'+
+      '<span class="cbox-title" style="margin:0">'+label+'</span>'+
+      '<div style="display:flex;align-items:center;gap:6px;">'+
+        (isDirty?'<span style="font-size:9px;color:#D97706;">● 저장 안 됨</span>':'')+
+        '<span id="cnt-'+taId+'" class="char-count" style="margin:0">'+(job[field]||'').length+'자</span>'+
+        '<button id="savebtn-'+dk+'" class="btn-sm" style="'+(isDirty?'background:var(--mint);color:#fff;':'opacity:0.4;cursor:default;')+'" onclick="saveField(\''+dk+'\',\''+taId+'\',\''+field+'\')"'+(isDirty?'':' disabled')+'>저장</button>'+
+      '</div>'+
+    '</div>'+
+    '<textarea id="'+taId+'" rows="'+rows+'" placeholder="'+ph+'" oninput="markDirty(\''+dk+'\',\''+taId+'\',\''+field+'\')">'+esc(job[field]||'')+'</textarea>'+
+  '</div>';
+}
+
+/* ====== COVER TAB ====== */
+function buildCoverTab(job){
+  var cls=job.cls||[];
+  return '<div>'+
+    cls.map((cl,i)=>{
+      var dk='cl_'+cl.id;var isDirty=!!state.dirty[dk];
+      var len=(cl.a||'').length,over=cl.lim&&len>cl.lim;
+      return'<div class="cover-item'+(isDirty?' dirty':'')+'" id="box-'+dk+'">'+
+        '<div class="cover-item-hdr">'+
+          '<span class="cover-num">문항 '+(i+1)+'</span>'+
+          '<input id="cl-q-'+cl.id+'" class="cover-q-input" placeholder="자기소개서 문항을 입력하세요" value="'+esc(cl.q||'')+'" oninput="markCLDirty(\''+dk+'\','+cl.id+')">'+
+          '<div class="cover-actions">'+
+            (isDirty?'<span style="font-size:9px;color:#D97706;white-space:nowrap;">● 미저장</span>':'<span style="font-size:9px;color:'+MU+';white-space:nowrap;">저장됨 ✓</span>')+
+            '<button id="savebtn-'+dk+'" class="cover-save-btn" onclick="saveCL('+cl.id+')"'+(isDirty?'':' disabled style="background:'+MM+'"')+'>저장</button>'+
+            '<button class="btn-del-cover" onclick="deleteCL('+cl.id+')">삭제</button>'+
+          '</div>'+
+        '</div>'+
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">'+
+          '<span style="font-size:9px;color:'+H+'">글자제한</span>'+
+          '<input type="number" id="cl-lim-'+cl.id+'" min="0" value="'+(cl.lim||0)+'" oninput="markCLDirty(\''+dk+'\','+cl.id+')" style="width:60px;padding:3px 6px;border:1px solid '+BR+';border-radius:5px;font-size:10px;outline:none;">'+
+        '</div>'+
+        '<textarea id="cl-ta-'+cl.id+'" rows="6" placeholder="답변 작성..." oninput="markCLDirty(\''+dk+'\','+cl.id+')" style="'+(over?'border-color:#FCA5A5;':'')+'">'+esc(cl.a||'')+'</textarea>'+
+        '<div id="cl-cnt-'+cl.id+'" class="char-count" style="color:'+(over?'#DC2626':H)+'">'+len+'자'+(cl.lim?' / '+cl.lim+'자'+(over?' ⚠ 초과!':''):'')+'</div>'+
+      '</div>';
+    }).join('')+
+    '<button onclick="addCL()" style="width:100%;padding:10px;border:1.5px dashed '+MM+';border-radius:10px;background:transparent;color:'+M+';font-size:13px;cursor:pointer;margin-top:2px;">+ 문항 추가</button>'+
+  '</div>';
+}
+
+/* ====== DIRTY TRACKING ====== */
+function markDirty(dk,taId,field){
+  state.dirty[dk]=true;
+  var box=document.getElementById('box-'+dk),btn=document.getElementById('savebtn-'+dk),cnt=document.getElementById('cnt-'+taId),ta=document.getElementById(taId);
+  if(box){box.style.borderColor='#FDE68A';box.style.background='#FEFDF5';}
+  if(btn){btn.disabled=false;btn.style.background=M;btn.style.color='#fff';btn.style.opacity='1';btn.style.cursor='pointer';}
+  if(cnt&&ta)cnt.textContent=ta.value.length+'자';
+}
+function saveField(dk,taId,field){
+  var ta=document.getElementById(taId);if(!ta)return;
+  var job=state.jobs.find(j=>j.id===state.selId);if(!job)return;
+  job[field]=ta.value;delete state.dirty[dk];saveAll();render();
+}
+function markDirtySite(dk){
+  state.dirty[dk]=true;
+  var box=document.getElementById('box-'+dk),btn=document.getElementById('savebtn-'+dk);
+  if(box){box.style.borderColor='#FDE68A';box.style.background='#FEFDF5';}
+  if(btn){btn.disabled=false;btn.style.background=M;btn.style.color='#fff';btn.style.opacity='1';btn.style.cursor='pointer';}
+}
+function saveSiteUrl(dk){
+  var inp=document.getElementById('inp-siteUrl');if(!inp)return;
+  var job=state.jobs.find(j=>j.id===state.selId);if(!job)return;
+  job.siteUrl=inp.value.trim();delete state.dirty[dk];saveAll();render();
+}
+function markCLDirty(dk,clId){
+  state.dirty[dk]=true;
+  var box=document.getElementById('box-'+dk),btn=document.getElementById('savebtn-'+dk);
+  if(box){box.classList.add('dirty');}
+  if(btn){btn.disabled=false;btn.style.background=M;btn.removeAttribute('style');}
+  var ta=document.getElementById('cl-ta-'+clId),lim=document.getElementById('cl-lim-'+clId),cnt=document.getElementById('cl-cnt-'+clId);
+  if(ta&&cnt){var len=ta.value.length,limV=lim?+lim.value:0,over=limV&&len>limV;cnt.textContent=len+'자'+(limV?' / '+limV+'자'+(over?' ⚠ 초과!':''):'');cnt.style.color=over?'#DC2626':H;ta.style.borderColor=over?'#FCA5A5':'';}
+}
+function saveCL(clId){
+  var job=state.jobs.find(j=>j.id===state.selId);if(!job)return;
+  var cl=job.cls.find(c=>c.id===clId);if(!cl)return;
+  var ta=document.getElementById('cl-ta-'+clId),qi=document.getElementById('cl-q-'+clId),li=document.getElementById('cl-lim-'+clId);
+  if(ta)cl.a=ta.value;if(qi)cl.q=qi.value;if(li)cl.lim=+li.value;
+  delete state.dirty['cl_'+clId];saveAll();render();
+}
+
+/* ====== CALENDAR ====== */
+function buildCal(){
+  var y=state.calY,m=state.calM,first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),today=new Date();
+  var evs={};
+  state.jobs.forEach(job=>{
+    if(job.deadline){var d=new Date(job.deadline+'T00:00');if(d.getFullYear()===y&&d.getMonth()===m){var k=d.getDate();if(!evs[k])evs[k]=[];evs[k].push({t:'d',job});}}
+    (job.interviews||[]).forEach(iv=>{var d=new Date(iv+'T00:00');if(d.getFullYear()===y&&d.getMonth()===m){var k=d.getDate();if(!evs[k])evs[k]=[];evs[k].push({t:'i',job});}});
+  });
+  var cells='';
+  for(var i=0;i<first;i++)cells+='<div></div>';
+  for(var d=1;d<=days;d++){
+    var isT=today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d;
+    var ev=evs[d]||[];
+    cells+='<div class="cal-cell'+(isT?' today':'')+'">'+
+      '<div style="font-size:13px;font-weight:'+(isT?700:500)+';color:'+(isT?M:'#444')+';margin-bottom:4px;">'+d+'</div>'+
+      ev.slice(0,3).map(e=>'<div class="cal-ev '+(e.t==='d'?'dl':'iv')+'" onclick="calSel('+e.job.id+')">'+esc(e.job.company)+(e.t==='i'?' 면접':'')+'</div>').join('')+
+      (ev.length>3?'<div style="font-size:10px;color:'+H+';margin-top:2px;">+'+( ev.length-3)+' 더</div>':'')+
+    '</div>';
+  }
+  var mn=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  return '<div class="cal-wrap">'+
+    '<div class="cal-nav">'+
+      '<button class="cal-nbtn" onclick="calPrev()">&#8249;</button>'+
+      '<span style="font-weight:700;font-size:18px;">'+y+'년 '+mn[m]+'</span>'+
+      '<button class="cal-nbtn" onclick="calNext()">&#8250;</button>'+
+      '<div style="margin-left:auto;display:flex;gap:12px;font-size:12px;color:'+MU+';">'+
+        '<span><span style="display:inline-block;width:10px;height:10px;background:#D1FAE5;border-radius:3px;margin-right:4px;vertical-align:middle"></span>마감</span>'+
+        '<span><span style="display:inline-block;width:10px;height:10px;background:#FEF3C7;border-radius:3px;margin-right:4px;vertical-align:middle"></span>면접</span>'+
+        '<span style="color:'+H+';font-size:11px;">클릭하면 상세로 이동</span>'+
+      '</div>'+
+    '</div>'+
+    '<div class="cal-grid">'+['일','월','화','수','목','금','토'].map(d=>'<div class="cal-dh">'+d+'</div>').join('')+'</div>'+
+    '<div class="cal-grid" style="overflow-y:auto;flex:1;align-content:start;margin-top:3px;">'+cells+'</div>'+
+  '</div>';
+}
+
+/* ====== COVER PAGE ====== */
+function buildCoverPage(){
+  var withCL=state.jobs.filter(j=>(j.cls||[]).length>0);
+  var selJob=state.jobs.find(j=>j.id===state.selId);
+  return '<div style="display:flex;flex:1;overflow:hidden;">'+
+    '<div class="left" style="width:210px;">'+
+      '<div style="padding:7px 10px;border-bottom:1px solid '+BR+';font-size:9px;color:'+H+'">공고별 자소서 관리</div>'+
+      '<div class="list-area">'+
+        (withCL.length?withCL.map(job=>{var st=gs(job.status),sel=state.selId===job.id;return'<div class="job-card'+(sel?' sel':'')+'" onclick="selectJob('+job.id+')">'+
+          '<div class="card-co">'+esc(job.company)+'</div><div class="card-role">'+esc(job.role)+'</div>'+
+          '<div style="display:flex;justify-content:space-between;margin-top:4px;"><span class="pill" style="background:'+st.bg+';color:'+st.c+'">'+st.label+'</span><span style="font-size:8px;color:'+H+'">'+job.cls.length+'개 문항</span></div>'+
+        '</div>';}).join(''):
+        '<div class="no-sel">아직 자기소개서가 없습니다.<br>채용공고 탭에서 문항을 추가하세요.</div>')+
+      '</div>'+
+    '</div>'+
+    (selJob&&(selJob.cls||[]).length?
+      '<div class="right"><div class="rhdr"><span style="font-size:14px;font-weight:600;">'+esc(selJob.company)+'</span> <span style="font-size:11px;color:'+MU+'">'+esc(selJob.role)+'</span></div><div class="tcontent">'+buildCoverTab(selJob)+'</div></div>':
+      '<div class="right"><div class="empty"><div class="empty-icon">✎</div><div>왼쪽에서 공고를 선택하세요</div></div></div>')+
+  '</div>';
+}
+
+/* ====== ARTICLES PAGE ====== */
+function buildArtsPage(){
+  var sel=state.arts.find(a=>a.id===state.selArt);
+  return '<div style="display:flex;flex:1;overflow:hidden;">'+
+    '<div class="left" style="width:210px;"><div class="list-area">'+
+      (state.arts.length?[...state.arts].sort((a,b)=>b.ca_at-a.ca_at).map(a=>{var s=state.selArt===a.id;return'<div class="job-card'+(s?' sel':'')+'" onclick="selArt('+a.id+')">'+
+        '<div class="card-co">'+esc(a.title)+'</div>'+
+        '<div class="card-date">'+(a.company?esc(a.company)+' · ':'')+esc(a.date||'날짜 미정')+'</div>'+
+        (a.tags&&a.tags.length?'<div style="margin-top:3px;display:flex;flex-wrap:wrap;gap:2px;">'+a.tags.slice(0,2).map(t=>'<span style="font-size:8px;padding:1px 5px;background:'+ML+';color:'+MU+';border-radius:10px;">'+esc(t)+'</span>').join('')+'</div>':'')+
+      '</div>';}).join(''):
+      '<div class="no-sel">기사를 스크랩해보세요</div>')+
+    '</div></div>'+
+    (state.editArt?buildArtEditor():sel?buildArtDetail(sel):
+      '<div class="right"><div class="empty"><div class="empty-icon">◫</div><div>기사를 선택하거나 추가하세요</div><button onclick="openAddArt()" style="background:'+M+';color:#fff;border:none;padding:7px 16px;border-radius:8px;font-size:12px;cursor:pointer;margin-top:4px;">+ 기사 추가</button></div></div>')+
+  '</div>';
+}
+function buildArtDetail(a){
+  return '<div class="right">'+
+    '<div class="rhdr"><div class="rhdr-row">'+
+      '<div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;margin-bottom:2px;">'+esc(a.title)+'</div><div style="font-size:10px;color:'+H+'">'+(a.company?esc(a.company)+' · ':'')+esc(a.date||'')+'</div>'+(a.url?'<a href="'+esc(a.url)+'" target="_blank" style="font-size:10px;display:inline-flex;align-items:center;gap:2px;margin-top:3px;">원문 보기 ↗</a>':'')+
+      '</div>'+
+      '<div class="r-actions"><button class="btn-sm" onclick="editArtClick('+a.id+')">수정</button><button class="btn-sm btn-danger" onclick="deleteArt('+a.id+')">삭제</button></div>'+
+    '</div></div>'+
+    '<div class="tcontent">'+
+      (a.tags&&a.tags.length?'<div style="margin-bottom:10px;display:flex;flex-wrap:wrap;gap:4px;">'+a.tags.map(t=>'<span style="font-size:10px;padding:2px 9px;background:'+ML+';color:'+M+';border-radius:20px;border:1px solid '+MM+'">'+esc(t)+'</span>').join('')+'</div>':'')+
+      (a.memo?'<div class="cbox"><div class="cbox-title">메모 / 요약</div><div style="font-size:12px;line-height:1.75;white-space:pre-wrap;color:#1a1a1a;">'+esc(a.memo)+'</div></div>':
+       '<div style="text-align:center;padding:24px;color:'+H+';font-size:12px;">메모가 없습니다</div>')+
+    '</div>'+
+  '</div>';
+}
+function buildArtEditor(){
+  var a=state.editArt;
+  return '<div class="right">'+
+    '<div class="rhdr"><div class="rhdr-row"><span style="font-size:14px;font-weight:600;">'+(a.id?'기사 수정':'새 기사')+'</span><button class="btn-sm" onclick="cancelArt()">취소</button></div></div>'+
+    '<div class="tcontent">'+
+      fe('art-title','제목 *',a.title,'기사 제목을 입력하세요')+
+      fe('art-url','URL (원문 링크)',a.url||'','https://...')+
+      fe('art-company','관련 기업',a.company||'','카카오, 공통...')+
+      fe('art-date','날짜',a.date||'','','date')+
+      fe('art-tags','태그 (쉼표 구분)',a.tags?a.tags.join(', '):'','IT, 채용, 트렌드')+
+      '<div class="cbox"><div class="cbox-title">메모 / 요약</div><textarea id="art-memo" rows="8" placeholder="기사의 핵심 내용, 인사이트 등을 정리하세요">'+esc(a.memo||'')+'</textarea></div>'+
+      '<button onclick="saveArt()" style="width:100%;padding:10px;border:none;border-radius:9px;background:'+M+';color:#fff;font-size:13px;font-weight:600;cursor:pointer;margin-top:4px;">저장</button>'+
+    '</div>'+
+  '</div>';
+}
+
+/* ====== EXPERIENCE PAGE ====== */
+function buildExpPage(){
+  var sel=state.exps.find(e=>e.id===state.selExp);
+  return '<div style="display:flex;flex:1;overflow:hidden;">'+
+    '<div class="left" style="width:200px;"><div class="list-area">'+
+      (state.exps.length?[...state.exps].sort((a,b)=>b.ca_at-a.ca_at).map(e=>{var s=state.selExp===e.id;return'<div class="job-card'+(s?' sel':'')+'" onclick="selExp('+e.id+')">'+
+        '<div class="card-co">'+esc(e.title)+'</div>'+
+        (e.tags&&e.tags.length?'<div style="margin-top:3px;display:flex;flex-wrap:wrap;gap:2px;">'+e.tags.slice(0,2).map(t=>'<span style="font-size:8px;padding:1px 5px;background:'+ML+';color:'+MU+';border-radius:10px;">'+esc(t)+'</span>').join('')+'</div>':'')+
+      '</div>';}).join(''):
+      '<div class="no-sel">경험을 추가해보세요</div>')+
+    '</div></div>'+
+    (state.editExp?buildExpEditor():sel?buildExpDetail(sel):
+      '<div class="right"><div class="empty"><div class="empty-icon">◈</div><div>경험을 선택하거나 추가하세요</div><button onclick="openAddExp()" style="background:'+M+';color:#fff;border:none;padding:7px 16px;border-radius:8px;font-size:12px;cursor:pointer;margin-top:4px;">+ 경험 추가</button></div></div>')+
+  '</div>';
+}
+function buildExpDetail(e){
+  return '<div class="right">'+
+    '<div class="rhdr"><div class="rhdr-row"><div><div style="font-size:14px;font-weight:600;margin-bottom:3px;">'+esc(e.title)+'</div>'+
+    (e.tags&&e.tags.length?'<div style="display:flex;flex-wrap:wrap;gap:3px;">'+e.tags.map(t=>'<span style="font-size:9px;padding:2px 8px;background:'+ML+';color:'+M+';border-radius:20px;">'+esc(t)+'</span>').join('')+'</div>':'')+
+    '</div><div class="r-actions"><button class="btn-sm" onclick="editExpClick('+e.id+')">수정</button><button class="btn-sm btn-danger" onclick="deleteExp('+e.id+')">삭제</button></div></div></div>'+
+    '<div class="tcontent">'+STAR_KEYS.map(s=>'<div class="star-block"><div class="star-head" style="background:'+s.cb+'"><span style="font-size:10px;font-weight:600;color:'+s.c+'">'+s.l+'</span></div><div class="star-body">'+(e[s.k]?esc(e[s.k]):'<span style="color:'+H+'">아직 작성하지 않았습니다</span>')+'</div></div>').join('')+
+    '</div></div>';
+}
+function buildExpEditor(){
+  var e=state.editExp;
+  return '<div class="right">'+
+    '<div class="rhdr"><div class="rhdr-row"><span style="font-size:14px;font-weight:600;">'+(e.id?'경험 수정':'새 경험')+'</span><button class="btn-sm" onclick="cancelExp()">취소</button></div></div>'+
+    '<div class="tcontent">'+
+      fe('exp-title','제목 *',e.title,'팀 프로젝트 리더, 인턴 성과 달성 등')+
+      fe('exp-tags','태그 (쉼표 구분)',e.tags?e.tags.join(', '):'','리더십, 협업, 문제해결')+
+      STAR_KEYS.map(s=>'<div class="cbox"><div class="cbox-title" style="color:'+s.c+'">'+s.l+'</div><textarea id="exp-'+s.k+'" rows="4" placeholder="'+s.ph+'">'+esc(e[s.k]||'')+'</textarea></div>').join('')+
+      '<button onclick="saveExp()" style="width:100%;padding:10px;border:none;border-radius:9px;background:'+M+';color:#fff;font-size:13px;font-weight:600;cursor:pointer;margin-top:4px;">저장</button>'+
+    '</div></div>';
+}
+function fe(id,l,v,p,type){
+  return '<div class="cbox" style="padding:9px 12px;margin-bottom:8px;"><div class="cbox-title" style="margin-bottom:4px;">'+l+'</div><input id="'+id+'" type="'+(type||'text')+'" value="'+esc(v)+'" placeholder="'+p+'"></div>';
+}
+
+/* ====== MODAL ====== */
+function buildModal(){
+  var isEdit=state.modal==='edit';
+  var j=state.editJob||{company:'',role:'',status:'none',deadline:'',deadlineTime:'',industry:'',siteUrl:'',interviews:[]};
+  return '<div class="overlay">'+
+    '<div class="modal">'+
+      '<div class="modal-hdr"><span style="font-size:14px;font-weight:600;">'+(isEdit?'공고 수정':'새 공고 추가')+'</span><button class="modal-close" onclick="closeModal()">&#215;</button></div>'+
+      '<div>'+
+        mf('m-company','회사명 *',j.company,'카카오, 삼성전자...')+
+        mf('m-role','직무 *',j.role,'프론트엔드 개발자...')+
+        mf('m-industry','산업군',j.industry||'','IT, 금융...')+
+        mf('m-site','지원 사이트 URL',j.siteUrl||'','https://careers.kakao.com')+
+        '<div class="mfield"><div class="mlabel">상태</div>'+
+          CATS.filter(c=>c.statuses).map(cat=>'<div style="margin-bottom:7px;"><div style="font-size:9px;color:'+H+';margin-bottom:3px;">'+cat.label+'</div><div style="display:flex;flex-wrap:wrap;gap:3px;">'+
+            cat.statuses.map(sid=>{var s=gs(sid),on=(j.status||'none')===sid;return'<button onclick="mStat(\''+sid+'\')" style="font-size:10px;padding:3px 9px;border-radius:20px;border:1.5px solid '+(on?s.c:BR)+';background:'+(on?s.bg:'#fff')+';color:'+s.c+';cursor:pointer;">'+(on?'✓ ':'')+s.label+'</button>';}).join('')+
+          '</div></div>').join('')+
+        '</div>'+
+        '<div class="mfield"><div class="mlabel">마감일 & 마감시간</div><div style="display:flex;gap:7px;"><input id="m-deadline" type="date" value="'+(j.deadline||'')+'" class="minput" style="flex:1"><input id="m-dtime" type="time" value="'+(j.deadlineTime||'')+'" class="minput" style="width:110px"></div></div>'+
+        mf('m-iv','면접 일정 (쉼표 구분)',(j.interviews||[]).join(', '),'2026-03-25, 2026-04-01')+
+      '</div>'+
+      '<div class="modal-ftr"><button class="btn-cancel-m" onclick="closeModal()">취소</button><button class="btn-save-m" onclick="saveModal()">'+(isEdit?'수정하기':'추가하기')+'</button></div>'+
+    '</div>'+
+  '</div>';
+}
+function mf(id,l,v,p){return'<div class="mfield"><div class="mlabel">'+l+'</div><input id="'+id+'" class="minput" value="'+esc(v)+'" placeholder="'+p+'"></div>';}
+
+/* ====== RESIZE ====== */
+function startResize(e,resizerId,panelId){
+  e.preventDefault();
+  var panel=document.getElementById(panelId);
+  var resizer=document.getElementById(resizerId);
+  if(!panel)return;
+  resizer.classList.add('dragging');
+  var startX=e.clientX;
+  var startW=panel.offsetWidth;
+  function onMove(e){
+    var newW=startW+(e.clientX-startX);
+    newW=Math.max(160,Math.min(500,newW));
+    panel.style.width=newW+'px';
+    state.leftW=newW;
+  }
+  function onUp(){
+    resizer.classList.remove('dragging');
+    document.removeEventListener('mousemove',onMove);
+    document.removeEventListener('mouseup',onUp);
+    document.body.style.cursor='';
+    document.body.style.userSelect='';
+  }
+  document.body.style.cursor='col-resize';
+  document.body.style.userSelect='none';
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onUp);
+}
+
+/* ====== PASS BANK ====== */
+function buildPassBank(){
+  var passJobs=state.jobs.filter(j=>j.status==='pass'&&(j.cls||[]).length>0);
+  var sel=state.jobs.find(j=>j.id===state.selId&&j.status==='pass');
+  return '<div style="display:flex;flex:1;overflow:hidden;">'+
+    '<div class="left" style="width:230px;">'+
+      '<div style="padding:10px 12px;border-bottom:1px solid '+BR+';background:'+MB+';">'+
+        '<div style="font-size:12px;font-weight:600;color:'+MU+';">합격 자소서 보관함</div>'+
+        '<div style="font-size:10px;color:'+H+';margin-top:2px;">최종합격 공고의 자소서를 모아볼 수 있어요</div>'+
+      '</div>'+
+      '<div class="list-area">'+
+        (passJobs.length?
+          passJobs.map(job=>{
+            var s=state.selId===job.id;
+            return'<div class="pass-card'+(s?' sel':'')+'" onclick="selectJob('+job.id+')">'+
+              '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">'+
+                '<span style="font-weight:600;font-size:13px;">'+esc(job.company)+'</span>'+
+                '<span class="pass-badge">★ 합격</span>'+
+              '</div>'+
+              '<div style="font-size:11px;color:'+MU+';margin-bottom:5px;">'+esc(job.role)+'</div>'+
+              '<div style="font-size:10px;color:'+H+';">문항 '+job.cls.length+'개</div>'+
+            '</div>';
+          }).join(''):
+          '<div class="no-sel" style="padding:24px 12px;">최종합격 상태이면서<br>자소서가 있는 공고가 없어요.<br><br>채용공고 탭에서 공고 상태를<br>최종합격으로 바꾸면<br>여기에 나타나요 🌿</div>'
+        )+
+      '</div>'+
+    '</div>'+
+    (sel?
+      '<div class="right">'+
+        '<div class="rhdr">'+
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">'+
+            '<span style="font-size:15px;font-weight:600;">'+esc(sel.company)+'</span>'+
+            '<span class="pass-badge">★ 최종합격</span>'+
+          '</div>'+
+          '<div style="font-size:11px;color:'+MU+';">'+esc(sel.role)+(sel.industry?' · '+esc(sel.industry):'')+'</div>'+
+        '</div>'+
+        '<div class="tcontent">'+
+          '<div style="background:'+ML+';border:1px solid '+MM+';border-radius:10px;padding:11px 14px;margin-bottom:14px;font-size:12px;color:'+MU+';">'+
+            '✓ 이 자소서는 합격한 자소서예요. 다음 지원 시 참고해보세요!'+
+          '</div>'+
+          (sel.cls||[]).map((cl,i)=>
+            '<div class="cl-view-box">'+
+              '<div class="cl-q-label">'+
+                '<span class="cl-q-num">Q'+(i+1)+'</span>'+
+                '<span style="font-size:12px;font-weight:600;">'+esc(cl.q||'문항 '+(i+1))+'</span>'+
+              '</div>'+
+              '<div class="cl-answer">'+(cl.a?esc(cl.a):'<span style="color:'+H+';">작성된 내용이 없습니다</span>')+'</div>'+
+              '<div class="cl-meta">'+
+                '<span>'+(cl.a?(cl.a.length+'자'):'0자')+(cl.lim?' / 제한 '+cl.lim+'자':'')+'</span>'+
+              '</div>'+
+            '</div>'
+          ).join('')+
+        '</div>'+
+      '</div>':
+      '<div class="right"><div class="empty"><div class="empty-icon">★</div><div>왼쪽에서 합격한 공고를 선택하세요</div></div></div>'
+    )+
+  '</div>';
+}
+
+/* ====== STUDY PAGE ====== */
+function genCode(){return Math.random().toString(36).substring(2,8).toUpperCase();}
+
+function loadMyStudies(){
+  state._studyUnsub.forEach(fn=>fn());
+  state._studyUnsub=[];
+  // Save user profile on every login
+  db.collection('users').doc(currentUser.uid).set({
+    displayName:currentUser.displayName||'익명',
+    photoURL:currentUser.photoURL||'',
+    uid:currentUser.uid
+  },{merge:true});
+  var unsub=db.collection('studies')
+    .where('members','array-contains',currentUser.uid)
+    .onSnapshot(function(snap){
+      state.myStudies=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+      if(state.page==='study') render();
+    });
+  state._studyUnsub.push(unsub);
+}
+
+function selectStudy(id){
+  state.selStudy=id;
+  state.studyTab='timer';
+  state.selPost=null;
+  state.timerSessions=[];
+  state.studyMembers={};
+  loadStudyRealtime(id);
+  render();
+}
+
+function loadStudyRealtime(studyId){
+  state._studyUnsub.slice(1).forEach(fn=>fn());
+  state._studyUnsub=state._studyUnsub.slice(0,1);
+
+  var u1=db.collection('todos')
+    .where('studyId','==',studyId).where('uid','==',null)
+    .onSnapshot(function(snap){
+      state.sharedTodos=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+      if(state.page==='study') render();
+    });
+
+  var u2=db.collection('todos')
+    .where('uid','==',currentUser.uid).where('studyId','==',null)
+    .onSnapshot(function(snap){
+      state.personalTodos=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+      if(state.page==='study') render();
+    });
+
+  var u3=db.collection('posts')
+    .where('studyId','==',studyId)
+    .orderBy('createdAt','desc')
+    .onSnapshot(function(snap){
+      state.posts=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+      _answerCache={};
+      if(state.page==='study') render();
+    });
+
+  var u4=db.collection('timerSessions')
+    .where('studyId','==',studyId)
+    .where('uid','==',currentUser.uid)
+    .orderBy('startedAt','desc')
+    .limit(10)
+    .onSnapshot(function(snap){
+      state.timerSessions=snap.docs.map(d=>Object.assign({id:d.id},d.data()))
+        .filter(s=>s.duration>0);
+      if(state.page==='study'&&state.studyTab==='timer') render();
+    });
+
+  state._studyUnsub.push(u1,u2,u3,u4);
+
+  // Load member profiles
+  var study=state.myStudies.find(s=>s.id===studyId);
+  if(study&&study.members){
+    study.members.forEach(function(uid){
+      db.collection('users').doc(uid).get().then(function(doc){
+        if(doc.exists) state.studyMembers[uid]=doc.data();
+        if(state.page==='study') render();
+      });
+    });
+  }
+}
+
+async function createStudy(){
+  var name=document.getElementById('new-study-name').value.trim();
+  if(!name){alert('스터디 이름을 입력하세요');return;}
+  var code=genCode();
+  await db.collection('studies').add({
+    name,inviteCode:code,
+    members:[currentUser.uid],createdBy:currentUser.uid,
+    createdAt:new Date()
+  });
+  state.studyModal=null;render();showToast('스터디 생성! 초대코드: '+code);
+}
+
+async function joinStudy(){
+  var code=document.getElementById('join-code').value.trim().toUpperCase();
+  if(!code){alert('초대코드를 입력하세요');return;}
+  var snap=await db.collection('studies').where('inviteCode','==',code).get();
+  if(snap.empty){alert('초대코드를 찾을 수 없어요.');return;}
+  var studyId=snap.docs[0].id;
+  await db.collection('studies').doc(studyId).update({
+    members:firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+  });
+  state.studyModal=null;render();showToast('스터디 참여 완료!');
+}
+
+async function timerStart(){
+  var ref=await db.collection('timerSessions').add({
+    uid:currentUser.uid,studyId:state.selStudy,
+    startedAt:new Date(),endedAt:null,duration:0
+  });
+  state.timerSessionId=ref.id;
+  state.timerRunning=true;state.timerPaused=false;
+  state.timerInterval=setInterval(function(){
+    if(!state.timerPaused){
+      state.timerElapsed++;
+      var d=document.getElementById('timer-display');
+      if(d){d.textContent=fmtTime(state.timerElapsed);d.className='timer-display running';}
+    }
+  },1000);
+  render();
+}
+
+function timerPause(){
+  state.timerPaused=!state.timerPaused;
+  render();
+}
+
+async function timerStop(){
+  clearInterval(state.timerInterval);
+  if(state.timerSessionId&&state.timerElapsed>0){
+    await db.collection('timerSessions').doc(state.timerSessionId).update({
+      endedAt:new Date(),duration:state.timerElapsed
+    });
+    await db.collection('users').doc(currentUser.uid).set(
+      {studyTime:firebase.firestore.FieldValue.increment(state.timerElapsed)},{merge:true}
+    );
+  }
+  state.timerRunning=false;state.timerPaused=false;state.timerSessionId=null;state.timerElapsed=0;
+  render();showToast('공부 기록 저장됨 ✓');
+}
+
+function fmtTime(s){
+  var h=String(Math.floor(s/3600)).padStart(2,'0');
+  var m=String(Math.floor(s%3600/60)).padStart(2,'0');
+  var sec=String(s%60).padStart(2,'0');
+  return h+':'+m+':'+sec;
+}
+
+function fmtDate(ts){
+  if(!ts)return'';
+  var d=ts.toDate?ts.toDate():new Date(ts);
+  return (d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+
+async function addTodo(isShared){
+  var inputId=isShared?'shared-todo-input':'personal-todo-input';
+  var val=document.getElementById(inputId).value.trim();
+  if(!val)return;
+  var today=new Date();today.setHours(0,0,0,0);
+  await db.collection('todos').add({
+    title:val,done:false,
+    studyId:isShared?state.selStudy:null,
+    uid:isShared?null:currentUser.uid,
+    dueDate:today,
+    createdAt:new Date()
+  });
+  document.getElementById(inputId).value='';
+}
+
+async function toggleTodo(id,done){
+  await db.collection('todos').doc(id).update({done:!done});
+}
+
+async function deleteTodo(id){
+  await db.collection('todos').doc(id).delete();
+}
+
+var _qaImageBase64='';
+function handleQAImage(input){
+  var file=input.files[0];
+  if(!file)return;
+  if(file.size>500000){alert('이미지가 너무 커요. 500KB 이하로 올려주세요.');return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    _qaImageBase64=e.target.result;
+    var preview=document.getElementById('qa-img-preview');
+    if(preview){preview.src=_qaImageBase64;preview.style.display='block';}
+  };
+  reader.readAsDataURL(file);
+}
+
+async function addPost(){
+  var title=document.getElementById('qa-title').value.trim();
+  var body=document.getElementById('qa-body').value.trim();
+  var tags=document.getElementById('qa-tags').value.split(',').map(s=>s.trim()).filter(Boolean);
+  if(!title){alert('제목을 입력하세요');return;}
+  await db.collection('posts').add({
+    title,body,tags,
+    uid:currentUser.uid,
+    displayName:currentUser.displayName||'익명',
+    photoURL:currentUser.photoURL||'',
+    imageBase64:_qaImageBase64||'',
+    studyId:state.selStudy,
+    answerCount:0,
+    createdAt:new Date()
+  });
+  _qaImageBase64='';
+  state.showQAForm=false;showToast('질문 등록됨 ✓');
+}
+
+async function addAnswer(){
+  var body=document.getElementById('ans-body').value.trim();
+  var url=document.getElementById('ans-url').value.trim();
+  if(!body){alert('답변 내용을 입력하세요');return;}
+  await db.collection('posts').doc(state.selPost).collection('answers').add({
+    body,solutionUrl:url,
+    uid:currentUser.uid,
+    displayName:currentUser.displayName||'익명',
+    photoURL:currentUser.photoURL||'',
+    isAccepted:false,
+    createdAt:new Date()
+  });
+  await db.collection('posts').doc(state.selPost).update({
+    answerCount:firebase.firestore.FieldValue.increment(1)
+  });
+  state.showAnsForm=false;showToast('답변 등록됨 ✓');
+}
+
+async function acceptAnswer(answerId){
+  await db.collection('posts').doc(state.selPost).collection('answers').doc(answerId).update({isAccepted:true});
+  _answerCache={};showToast('답변 채택됨 ✓');
+}
+
+async function loadAnswers(postId){
+  var snap=await db.collection('posts').doc(postId).collection('answers').orderBy('createdAt').get();
+  return snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+}
+
+function copyInviteCode(code){
+  navigator.clipboard.writeText(code).then(function(){showToast('코드 복사됨: '+code);});
+}
+
+function avatar(photoURL,name,size){
+  size=size||28;
+  if(photoURL){
+    return '<img src="'+esc(photoURL)+'" style="width:'+size+'px;height:'+size+'px;border-radius:50%;object-fit:cover;border:1.5px solid var(--mintm);">';
+  }
+  var initials=(name||'?')[0].toUpperCase();
+  return '<div style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:var(--mintl);color:var(--mint);display:inline-flex;align-items:center;justify-content:center;font-size:'+(size/2.2|0)+'px;font-weight:700;flex-shrink:0;">'+initials+'</div>';
+}
+
+/* ── BUILD STUDY PAGE ── */
+function buildStudyPage(){
+  var study=state.myStudies.find(s=>s.id===state.selStudy);
+  return '<div class="study-layout">'+
+    buildStudyLeft()+
+    (study?buildStudyRight(study):buildStudyEmpty())+
+  '</div>'+
+  (state.studyModal?buildStudyModal():'');
+}
+
+function buildStudyLeft(){
+  return '<div class="study-left">'+
+    '<div class="study-btn-row">'+
+      '<button class="study-btn primary" onclick="state.studyModal=\'create\';render()">+ 생성</button>'+
+      '<button class="study-btn" onclick="state.studyModal=\'join\';render()">코드 참여</button>'+
+    '</div>'+
+    '<div style="overflow-y:auto;flex:1;">'+
+      (state.myStudies.length?state.myStudies.map(s=>{
+        var sel=state.selStudy===s.id;
+        return '<div class="study-card'+(sel?' sel':'')+'" onclick="selectStudy(\''+s.id+'\')">'+
+          '<div class="study-card-name">'+esc(s.name)+'</div>'+
+          '<div class="study-card-meta" style="display:flex;align-items:center;gap:4px;margin-top:4px;">'+
+            (s.members||[]).map(function(uid){
+              var m=state.studyMembers[uid];
+              return avatar(m&&m.photoURL,m&&m.displayName||'?',20);
+            }).join('')+
+            '<span style="margin-left:4px;font-size:10px;color:var(--h);">'+(s.members||[]).length+'명</span>'+
+          '</div>'+
+        '</div>';
+      }).join(''):
+      '<div style="padding:20px 12px;font-size:12px;color:var(--h);text-align:center;">스터디를 만들거나<br>초대코드로 참여하세요</div>')+
+    '</div>'+
+  '</div>';
+}
+
+function buildStudyEmpty(){
+  return '<div class="study-right"><div class="empty">'+
+    '<div class="empty-icon">⏱</div>'+
+    '<div>왼쪽에서 스터디를 선택하거나 만들어보세요</div>'+
+  '</div></div>';
+}
+
+function buildStudyRight(study){
+  var members=study.members||[];
+  return '<div class="study-right">'+
+    '<div class="rhdr">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">'+
+        '<div>'+
+          '<div style="font-size:15px;font-weight:700;color:var(--text1);">'+esc(study.name)+'</div>'+
+          '<div style="display:flex;align-items:center;gap:6px;margin-top:5px;">'+
+            members.map(function(uid){
+              var m=state.studyMembers[uid];
+              var name=m&&m.displayName||'멤버';
+              return '<div style="display:flex;align-items:center;gap:4px;" title="'+esc(name)+'">'+
+                avatar(m&&m.photoURL,name,24)+
+                '<span style="font-size:11px;color:var(--mu);">'+esc(name.split(' ')[0])+'</span>'+
+              '</div>';
+            }).join('')+
+          '</div>'+
+        '</div>'+
+        '<button class="invite-badge" onclick="copyInviteCode(\''+esc(study.inviteCode)+'\')" title="클릭하면 복사">'+
+          '초대코드 '+esc(study.inviteCode)+
+        '</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="study-tabs">'+
+      [['timer','⏱ 타이머'],['todos','✓ 투두'],['calendar','📅 캘린더'],['qa','Q&A']].map(function(t){
+        return '<button class="study-tab'+(state.studyTab===t[0]?' active':'')+'" onclick="state.studyTab=\''+t[0]+'\';render()">'+t[1]+'</button>';
+      }).join('')+
+    '</div>'+
+    '<div class="tcontent">'+
+      (state.studyTab==='timer'?buildTimerTab():'')+
+      (state.studyTab==='todos'?buildTodosTab():'')+
+      (state.studyTab==='calendar'?buildStudyCalendar():'')+
+      (state.studyTab==='qa'?buildQATab():'')+
+    '</div>'+
+  '</div>';
+}
+
+function buildTimerTab(){
+  var elapsed=state.timerElapsed;
+  var todaySecs=state.timerSessions
+    .filter(function(s){
+      if(!s.startedAt)return false;
+      var d=s.startedAt.toDate?s.startedAt.toDate():new Date(s.startedAt);
+      var now=new Date();
+      return d.toDateString()===now.toDateString();
+    })
+    .reduce(function(acc,s){return acc+(s.duration||0);},0);
+
+  return '<div class="timer-wrap">'+
+    '<div id="timer-display" class="timer-display'+(state.timerRunning?' running':'')+(state.timerPaused?' paused':'')+'">'+
+      fmtTime(elapsed)+
+    '</div>'+
+    (state.timerPaused?'<div style="font-size:12px;color:var(--h);margin-top:-8px;">일시정지 중</div>':'')+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">'+
+      (state.timerRunning?
+        '<button class="timer-btn" style="background:'+(state.timerPaused?'#D1FAE5':'#FEF3C7')+';color:'+(state.timerPaused?'#065F46':'#92400E')+'" onclick="timerPause()">'+
+          (state.timerPaused?'▶ 재개':'⏸ 일시정지')+
+        '</button>'+
+        '<button class="timer-btn timer-stop" onclick="timerStop()">■ 종료 및 저장</button>':
+        '<button class="timer-btn timer-start" onclick="timerStart()">▶ 공부 시작</button>')+
+    '</div>'+
+    '<div class="timer-today">오늘 누적 공부 시간 <strong>'+fmtTime(todaySecs)+'</strong></div>'+
+    (state.timerSessions.length?
+      '<div style="width:100%;max-width:340px;">'+
+        '<div style="font-size:12px;font-weight:700;color:var(--mu);margin-bottom:8px;">최근 기록</div>'+
+        state.timerSessions.slice(0,5).map(function(s){
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid var(--br);margin-bottom:6px;">'+
+            '<span style="font-size:12px;color:var(--mu);">'+fmtDate(s.startedAt)+'</span>'+
+            '<span style="font-size:13px;font-weight:700;color:var(--mint);">'+fmtTime(s.duration||0)+'</span>'+
+          '</div>';
+        }).join('')+
+      '</div>':'')+ 
+  '</div>';
+}
+
+function buildTodosTab(){
+  var today=new Date();today.setHours(0,0,0,0);
+  return '<div>'+
+    '<div class="todo-section">'+
+      '<div class="todo-section-title">'+
+        '<span style="background:var(--mintl);color:var(--mint);padding:2px 8px;border-radius:10px;font-size:10px;">공통</span>'+
+        '스터디 공통 투두'+
+      '</div>'+
+      (state.sharedTodos.length?state.sharedTodos.map(function(t){
+        return '<div class="todo-item">'+
+          '<input type="checkbox"'+(t.done?' checked':'')+' onchange="toggleTodo(\''+t.id+'\','+t.done+')">'+
+          '<span class="todo-item-text'+(t.done?' done':'')+'">'+esc(t.title)+'</span>'+
+          '<button class="todo-del" onclick="deleteTodo(\''+t.id+'\')">×</button>'+
+        '</div>';
+      }).join(''):'<div style="font-size:12px;color:var(--h);padding:4px 0;">아직 투두가 없어요</div>')+
+      '<div class="todo-input-row">'+
+        '<input class="todo-input" id="shared-todo-input" placeholder="공통 할 일 추가..." onkeydown="if(event.key===\'Enter\')addTodo(true)">'+
+        '<button class="todo-add-btn" onclick="addTodo(true)">추가</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="todo-section">'+
+      '<div class="todo-section-title">'+
+        '<span style="background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:10px;font-size:10px;">개인</span>'+
+        '나의 투두'+
+      '</div>'+
+      (state.personalTodos.length?state.personalTodos.map(function(t){
+        return '<div class="todo-item">'+
+          '<input type="checkbox"'+(t.done?' checked':'')+' onchange="toggleTodo(\''+t.id+'\','+t.done+')">'+
+          '<span class="todo-item-text'+(t.done?' done':'')+'">'+esc(t.title)+'</span>'+
+          '<button class="todo-del" onclick="deleteTodo(\''+t.id+'\')">×</button>'+
+        '</div>';
+      }).join(''):'<div style="font-size:12px;color:var(--h);padding:4px 0;">아직 투두가 없어요</div>')+
+      '<div class="todo-input-row">'+
+        '<input class="todo-input" id="personal-todo-input" placeholder="개인 할 일 추가..." onkeydown="if(event.key===\'Enter\')addTodo(false)">'+
+        '<button class="todo-add-btn" onclick="addTodo(false)">추가</button>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+function buildStudyCalendar(){
+  var y=state.studyCalY,m=state.studyCalM;
+  var first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
+  var today=new Date();
+  var mn=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+  // Map todos to dates
+  var todosByDate={};
+  var allTodos=state.sharedTodos.concat(state.personalTodos);
+  allTodos.forEach(function(t){
+    if(!t.dueDate)return;
+    var d=t.dueDate.toDate?t.dueDate.toDate():new Date(t.dueDate);
+    if(d.getFullYear()===y&&d.getMonth()===m){
+      var k=d.getDate();
+      if(!todosByDate[k])todosByDate[k]=[];
+      todosByDate[k].push(t);
+    }
+  });
+
+  var cells='';
+  for(var i=0;i<first;i++)cells+='<div></div>';
+  for(var d=1;d<=days;d++){
+    var isT=today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d;
+    var todos=todosByDate[d]||[];
+    var doneCnt=todos.filter(t=>t.done).length;
+    cells+='<div style="min-height:80px;padding:6px;border:1.5px solid '+(isT?'var(--mint)':'var(--br)')+';border-radius:10px;background:'+(isT?'var(--mintl)':'#fff')+';">'+
+      '<div style="font-size:12px;font-weight:'+(isT?700:500)+';color:'+(isT?'var(--mint)':'#444')+';margin-bottom:3px;">'+d+'</div>'+
+      todos.slice(0,3).map(function(t){
+        return '<div style="font-size:10px;padding:2px 5px;border-radius:5px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+
+          'background:'+(t.done?'#D1FAE5':'var(--mintl)')+';color:'+(t.done?'#065F46':'var(--mint)')+';'+
+          (t.done?'text-decoration:line-through;':'')+'">'+(t.done?'✓ ':'')+esc(t.title)+'</div>';
+      }).join('')+
+      (todos.length>3?'<div style="font-size:9px;color:var(--h);">+'+( todos.length-3)+' 더</div>':'')+
+      (isT&&todos.length>0?'<div style="font-size:9px;color:var(--mint);font-weight:600;margin-top:2px;">'+doneCnt+'/'+todos.length+' 완료</div>':'')+
+    '</div>';
+  }
+
+  return '<div style="padding-bottom:16px;">'+
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">'+
+      '<button onclick="state.studyCalM--;if(state.studyCalM<0){state.studyCalM=11;state.studyCalY--;}render()" class="cal-nbtn">&#8249;</button>'+
+      '<span style="font-weight:700;font-size:16px;">'+y+'년 '+mn[m]+'</span>'+
+      '<button onclick="state.studyCalM++;if(state.studyCalM>11){state.studyCalM=0;state.studyCalY++;}render()" class="cal-nbtn">&#8250;</button>'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px;">'+
+      ['일','월','화','수','목','금','토'].map(d=>'<div style="font-size:11px;text-align:center;color:var(--h);padding:4px 0;font-weight:700;">'+d+'</div>').join('')+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">'+cells+'</div>'+
+  '</div>';
+}
+
+function buildQATab(){
+  var post=state.posts.find(p=>p.id===state.selPost);
+  return '<div>'+
+    '<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">'+
+      '<button class="study-btn primary" style="width:auto;padding:7px 14px;font-size:12px;" onclick="state.showQAForm=!state.showQAForm;render()">'+
+        (state.showQAForm?'✕ 취소':'+ 질문 작성')+
+      '</button>'+
+    '</div>'+
+    (state.showQAForm?
+      '<div class="todo-section" style="margin-bottom:12px;">'+
+        '<div class="todo-section-title">새 질문</div>'+
+        '<div style="display:flex;flex-direction:column;gap:8px;">'+
+          '<input class="todo-input" id="qa-title" placeholder="질문 제목 *">'+
+          '<textarea class="todo-input" id="qa-body" rows="4" placeholder="질문 내용을 자세히 적어주세요" style="resize:vertical;line-height:1.6;"></textarea>'+
+          '<input class="todo-input" id="qa-tags" placeholder="태그 (쉼표 구분, 예: 알고리즘, CS)">'+
+          '<div style="display:flex;align-items:center;gap:8px;">'+
+            '<label style="font-size:12px;color:var(--mu);cursor:pointer;display:flex;align-items:center;gap:5px;padding:7px 12px;border:1.5px solid var(--br);border-radius:9px;background:#F8F9FA;">'+
+              '📎 사진 첨부 <input type="file" accept="image/*" style="display:none;" onchange="handleQAImage(this)">'+
+            '</label>'+
+            '<span style="font-size:11px;color:var(--h);">500KB 이하 권장</span>'+
+          '</div>'+
+          '<img id="qa-img-preview" style="display:none;max-width:100%;border-radius:8px;border:1px solid var(--br);">'+
+          '<button class="study-btn primary" style="padding:10px;" onclick="addPost()">질문 등록</button>'+
+        '</div>'+
+      '</div>':'')+ 
+    (post?buildPostDetail(post):
+      (state.posts.length?state.posts.map(function(p){
+        return '<div class="qa-card" onclick="state.selPost=\''+p.id+'\';_answerCache={};render()">'+
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'+
+            avatar(p.photoURL,p.displayName,24)+
+            '<span style="font-size:12px;font-weight:600;color:var(--text2);">'+esc(p.displayName||'익명')+'</span>'+
+          '</div>'+
+          '<div class="qa-title">'+esc(p.title)+'</div>'+
+          '<div class="qa-meta">'+
+            '답변 '+(p.answerCount||0)+'개'+
+            ((p.tags||[]).length?' · '+p.tags.slice(0,2).map(t=>'<span class="qa-tag">'+esc(t)+'</span>').join(' '):'')+
+          '</div>'+
+        '</div>';
+      }).join(''):
+      '<div class="study-empty"><div style="font-size:28px;opacity:0.2;">Q</div><div>아직 질문이 없어요<br>첫 질문을 작성해보세요!</div></div>')
+    )+'</div>';
+}
+
+var _answerCache={};
+function buildPostDetail(post){
+  var answers=_answerCache[post.id]||[];
+  if(!_answerCache[post.id]){
+    loadAnswers(post.id).then(function(ans){_answerCache[post.id]=ans;if(state.page==='study')render();});
+  }
+  return '<div>'+
+    '<button onclick="state.selPost=null;state.showAnsForm=false;render()" style="border:none;background:none;color:var(--mint);font-size:13px;cursor:pointer;margin-bottom:10px;">← 목록으로</button>'+
+    '<div class="cbox">'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">'+
+        avatar(post.photoURL,post.displayName,30)+
+        '<div>'+
+          '<div style="font-size:13px;font-weight:600;color:var(--text1);">'+esc(post.displayName||'익명')+'</div>'+
+        '</div>'+
+      '</div>'+
+      ((post.tags||[]).length?'<div style="margin-bottom:8px;">'+post.tags.map(t=>'<span class="qa-tag" style="margin-right:4px;">'+esc(t)+'</span>').join('')+'</div>':'')+
+      '<div style="font-size:15px;font-weight:700;margin-bottom:8px;">'+esc(post.title)+'</div>'+
+      '<div style="font-size:13px;color:var(--text2);white-space:pre-wrap;line-height:1.7;">'+esc(post.body||'')+'</div>'+
+      (post.imageBase64?'<img src="'+post.imageBase64+'" style="max-width:100%;border-radius:8px;margin-top:10px;border:1px solid var(--br);">':'')+
+    '</div>'+
+    '<div style="font-size:12px;font-weight:700;color:var(--mu);margin:12px 0 8px;">답변 '+answers.length+'개</div>'+
+    answers.map(function(a){
+      var isMine=currentUser&&a.uid===currentUser.uid;
+      var isAuthor=currentUser&&post.uid===currentUser.uid;
+      return '<div class="answer-box'+(a.isAccepted?' accepted':'')+'">'+
+        (a.isAccepted?'<div style="font-size:10px;color:var(--mint);font-weight:700;margin-bottom:6px;">✓ 채택된 답변</div>':'')+
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">'+
+          avatar(a.photoURL,a.displayName,22)+
+          '<span style="font-size:12px;font-weight:600;color:var(--text2);">'+esc(a.displayName||'익명')+'</span>'+
+        '</div>'+
+        '<div style="font-size:13px;color:var(--text2);white-space:pre-wrap;line-height:1.7;">'+esc(a.body)+'</div>'+
+        (a.solutionUrl?'<a href="'+esc(a.solutionUrl)+'" target="_blank" style="font-size:11px;color:var(--mint);display:inline-block;margin-top:6px;padding:4px 10px;border:1px solid var(--mintm);border-radius:6px;text-decoration:none;background:var(--mintl);">풀이 보기 ↗</a>':'')+
+        (!a.isAccepted&&!isMine&&isAuthor?
+          '<div style="margin-top:8px;">'+
+            '<button onclick="acceptAnswer(\''+a.id+'\')" style="border:none;background:var(--mintl);color:var(--mint);padding:4px 12px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;">채택하기</button>'+
+          '</div>':'')+
+      '</div>';
+    }).join('')+
+    '<div style="margin-top:14px;">'+
+      '<button class="study-btn" style="padding:9px;margin-bottom:8px;" onclick="state.showAnsForm=!state.showAnsForm;render()">'+
+        (state.showAnsForm?'✕ 취소':'+ 답변 작성')+
+      '</button>'+
+      (state.showAnsForm?
+        '<div class="todo-section">'+
+          '<textarea class="todo-input" id="ans-body" rows="4" placeholder="답변 내용 *" style="margin-bottom:8px;resize:vertical;line-height:1.6;"></textarea>'+
+          '<input class="todo-input" id="ans-url" placeholder="풀이 링크 (GitHub / Notion 등)" style="margin-bottom:8px;">'+
+          '<button class="study-btn primary" style="padding:10px;width:100%;" onclick="addAnswer()">답변 등록</button>'+
+        '</div>':'')+
+    '</div>'+
+  '</div>';
+}
+
+function buildStudyModal(){
+  var isCreate=state.studyModal==='create';
+  return '<div class="study-modal-overlay">'+
+    '<div class="study-modal">'+
+      '<div class="study-modal-title">'+(isCreate?'새 스터디 만들기':'초대코드로 참여')+'</div>'+
+      (isCreate?
+        '<div style="margin-bottom:12px;"><div class="mlabel">스터디 이름</div><input id="new-study-name" class="minput" placeholder="예: 코딩테스트 스터디" autofocus></div>':
+        '<div style="margin-bottom:12px;"><div class="mlabel">초대코드 6자리</div><input id="join-code" class="minput" placeholder="예: ABC123" style="letter-spacing:3px;text-transform:uppercase;" autofocus></div>')+
+      '<div class="modal-ftr">'+
+        '<button class="btn-cancel-m" onclick="state.studyModal=null;render()">취소</button>'+
+        '<button class="btn-save-m" onclick="'+(isCreate?'createStudy()':'joinStudy()')+'">'+
+          (isCreate?'만들기':'참여하기')+
+        '</button>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+function selectStudy(id){
+  state.selStudy=id;
+  state.studyTab='timer';
+  state.selPost=null;
+  loadStudyRealtime(id);
+  render();
+}
+
+function loadStudyRealtime(studyId){
+  state._studyUnsub.slice(1).forEach(fn=>fn());
+  state._studyUnsub=state._studyUnsub.slice(0,1);
+
+  var u1=db.collection('todos')
+    .where('studyId','==',studyId).where('uid','==',null)
+    .onSnapshot(function(snap){
+      state.sharedTodos=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+      if(state.page==='study'&&state.studyTab==='todos') render();
+    });
+
+  var u2=db.collection('todos')
+    .where('uid','==',currentUser.uid).where('studyId','==',null)
+    .onSnapshot(function(snap){
+      state.personalTodos=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+      if(state.page==='study'&&state.studyTab==='todos') render();
+    });
+
+  var u3=db.collection('posts')
+    .where('studyId','==',studyId)
+    .orderBy('createdAt','desc')
+    .onSnapshot(function(snap){
+      state.posts=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+      if(state.page==='study'&&state.studyTab==='qa') render();
+    });
+
+  state._studyUnsub.push(u1,u2,u3);
+}
+
+async function createStudy(){
+  var name=document.getElementById('new-study-name').value.trim();
+  if(!name){alert('스터디 이름을 입력하세요');return;}
+  var code=genCode();
+  await db.collection('studies').add({
+    name,inviteCode:code,
+    members:[currentUser.uid],createdBy:currentUser.uid,
+    createdAt:new Date()
+  });
+  state.studyModal=null;render();showToast('스터디 생성 완료! 코드: '+code);
+}
+
+async function joinStudy(){
+  var code=document.getElementById('join-code').value.trim().toUpperCase();
+  if(!code){alert('초대코드를 입력하세요');return;}
+  var snap=await db.collection('studies').where('inviteCode','==',code).get();
+  if(snap.empty){alert('초대코드를 찾을 수 없어요.');return;}
+  var studyId=snap.docs[0].id;
+  await db.collection('studies').doc(studyId).update({
+    members:firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+  });
+  state.studyModal=null;render();showToast('스터디 참여 완료!');
+}
+
+async function timerStart(){
+  var ref=await db.collection('timerSessions').add({
+    uid:currentUser.uid,studyId:state.selStudy,
+    startedAt:new Date(),endedAt:null,duration:0
+  });
+  state.timerSessionId=ref.id;
+  state.timerRunning=true;
+  state.timerInterval=setInterval(function(){
+    state.timerElapsed++;
+    var d=document.getElementById('timer-display');
+    if(d){d.textContent=fmtTime(state.timerElapsed);d.className='timer-display running';}
+  },1000);
+  render();
+}
+
+async function timerStop(){
+  clearInterval(state.timerInterval);
+  if(state.timerSessionId){
+    await db.collection('timerSessions').doc(state.timerSessionId).update({
+      endedAt:new Date(),duration:state.timerElapsed
+    });
+    await db.collection('users').doc(currentUser.uid).set(
+      {studyTime:firebase.firestore.FieldValue.increment(state.timerElapsed)},{merge:true}
+    );
+  }
+  state.timerRunning=false;state.timerSessionId=null;state.timerElapsed=0;
+  render();showToast('공부 기록 저장됨');
+}
+
+function fmtTime(s){
+  var h=String(Math.floor(s/3600)).padStart(2,'0');
+  var m=String(Math.floor(s%3600/60)).padStart(2,'0');
+  var sec=String(s%60).padStart(2,'0');
+  return h+':'+m+':'+sec;
+}
+
+async function addTodo(isShared){
+  var inputId=isShared?'shared-todo-input':'personal-todo-input';
+  var val=document.getElementById(inputId).value.trim();
+  if(!val)return;
+  await db.collection('todos').add({
+    title:val,done:false,
+    studyId:isShared?state.selStudy:null,
+    uid:isShared?null:currentUser.uid,
+    createdAt:new Date()
+  });
+  document.getElementById(inputId).value='';
+}
+
+async function toggleTodo(id,done){
+  await db.collection('todos').doc(id).update({done:!done});
+}
+
+async function deleteTodo(id){
+  await db.collection('todos').doc(id).delete();
+}
+
+async function addPost(){
+  var title=document.getElementById('qa-title').value.trim();
+  var body=document.getElementById('qa-body').value.trim();
+  var tags=document.getElementById('qa-tags').value.split(',').map(s=>s.trim()).filter(Boolean);
+  if(!title){alert('제목을 입력하세요');return;}
+  await db.collection('posts').add({
+    title,body,tags,
+    uid:currentUser.uid,
+    displayName:currentUser.displayName||'익명',
+    studyId:state.selStudy,
+    answerCount:0,
+    createdAt:new Date()
+  });
+  state.showQAForm=false;render();showToast('질문 등록됨');
+}
+
+async function addAnswer(){
+  var body=document.getElementById('ans-body').value.trim();
+  var url=document.getElementById('ans-url').value.trim();
+  if(!body){alert('답변 내용을 입력하세요');return;}
+  await db.collection('posts').doc(state.selPost).collection('answers').add({
+    body,solutionUrl:url,
+    uid:currentUser.uid,
+    displayName:currentUser.displayName||'익명',
+    isAccepted:false,
+    createdAt:new Date()
+  });
+  await db.collection('posts').doc(state.selPost).update({
+    answerCount:firebase.firestore.FieldValue.increment(1)
+  });
+  state.showAnsForm=false;render();showToast('답변 등록됨');
+}
+
+async function acceptAnswer(answerId){
+  await db.collection('posts').doc(state.selPost).collection('answers').doc(answerId).update({isAccepted:true});
+  render();showToast('답변 채택됨 ✓');
+}
+
+async function loadAnswers(postId){
+  var snap=await db.collection('posts').doc(postId).collection('answers').orderBy('createdAt').get();
+  return snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+}
+
+function copyInviteCode(code){
+  navigator.clipboard.writeText(code).then(function(){showToast('코드 복사됨: '+code);});
+}
+
+/* ── BUILD STUDY PAGE ── */
+function buildStudyPage(){
+  var study=state.myStudies.find(s=>s.id===state.selStudy);
+  return '<div class="study-layout">'+
+    buildStudyLeft()+
+    (study?buildStudyRight(study):buildStudyEmpty())+
+  '</div>'+
+  (state.studyModal?buildStudyModal():'');
+}
+
+function buildStudyLeft(){
+  return '<div class="study-left">'+
+    '<div class="study-btn-row">'+
+      '<button class="study-btn primary" onclick="state.studyModal=\'create\';render()">+ 생성</button>'+
+      '<button class="study-btn" onclick="state.studyModal=\'join\';render()">코드 참여</button>'+
+    '</div>'+
+    '<div style="overflow-y:auto;flex:1;">'+
+      (state.myStudies.length?state.myStudies.map(s=>{
+        var sel=state.selStudy===s.id;
+        return '<div class="study-card'+(sel?' sel':'')+'" onclick="selectStudy(\''+s.id+'\')">'+
+          '<div class="study-card-name">'+esc(s.name)+'</div>'+
+          '<div class="study-card-meta">멤버 '+((s.members||[]).length)+'명</div>'+
+        '</div>';
+      }).join(''):
+      '<div style="padding:20px 12px;font-size:12px;color:var(--h);text-align:center;">스터디를 만들거나<br>초대코드로 참여하세요</div>')+
+    '</div>'+
+  '</div>';
+}
+
+function buildStudyEmpty(){
+  return '<div class="study-right"><div class="empty">'+
+    '<div class="empty-icon">⏱</div>'+
+    '<div>왼쪽에서 스터디를 선택하거나 만들어보세요</div>'+
+  '</div></div>';
+}
+
+function buildStudyRight(study){
+  return '<div class="study-right">'+
+    '<div class="rhdr">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;">'+
+        '<div>'+
+          '<div style="font-size:15px;font-weight:700;color:var(--text1);">'+esc(study.name)+'</div>'+
+          '<div style="font-size:11px;color:var(--mu);margin-top:2px;">멤버 '+((study.members||[]).length)+'명</div>'+
+        '</div>'+
+        '<button class="invite-badge" onclick="copyInviteCode(\''+esc(study.inviteCode)+'\')" title="클릭하면 복사">'+
+          '초대코드 '+esc(study.inviteCode)+
+        '</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="study-tabs">'+
+      [['timer','⏱ 타이머'],['todos','✓ 투두'],['qa','Q&A']].map(function(t){
+        return '<button class="study-tab'+(state.studyTab===t[0]?' active':'')+'" onclick="state.studyTab=\''+t[0]+'\';render()">'+t[1]+'</button>';
+      }).join('')+
+    '</div>'+
+    '<div class="tcontent">'+
+      (state.studyTab==='timer'?buildTimerTab():'')+
+      (state.studyTab==='todos'?buildTodosTab():'')+
+      (state.studyTab==='qa'?buildQATab():'')+
+    '</div>'+
+  '</div>';
+}
+
+function buildTimerTab(){
+  var elapsed=state.timerElapsed;
+  return '<div class="timer-wrap">'+
+    '<div id="timer-display" class="timer-display'+(state.timerRunning?' running':'')+'">'+fmtTime(elapsed)+'</div>'+
+    (state.timerRunning?
+      '<button class="timer-btn timer-stop" onclick="timerStop()">■ 종료</button>':
+      '<button class="timer-btn timer-start" onclick="timerStart()">▶ 공부 시작</button>')+
+    '<div class="timer-today">오늘 이 세션의 기록이 저장돼요</div>'+
+  '</div>';
+}
+
+function buildTodosTab(){
+  return '<div>'+
+    '<div class="todo-section">'+
+      '<div class="todo-section-title">'+
+        '<span style="background:var(--mintl);color:var(--mint);padding:2px 8px;border-radius:10px;font-size:10px;">공통</span>'+
+        '스터디 공통 투두'+
+      '</div>'+
+      (state.sharedTodos.length?state.sharedTodos.map(function(t){
+        return '<div class="todo-item">'+
+          '<input type="checkbox"'+(t.done?' checked':'')+' onchange="toggleTodo(\''+t.id+'\','+t.done+')">'+
+          '<span class="todo-item-text'+(t.done?' done':'')+'">'+esc(t.title)+'</span>'+
+          '<button class="todo-del" onclick="deleteTodo(\''+t.id+'\')">×</button>'+
+        '</div>';
+      }).join(''):'<div style="font-size:12px;color:var(--h);padding:4px 0;">아직 투두가 없어요</div>')+
+      '<div class="todo-input-row">'+
+        '<input class="todo-input" id="shared-todo-input" placeholder="공통 할 일 추가..." onkeydown="if(event.key===\'Enter\')addTodo(true)">'+
+        '<button class="todo-add-btn" onclick="addTodo(true)">추가</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="todo-section">'+
+      '<div class="todo-section-title">'+
+        '<span style="background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:10px;font-size:10px;">개인</span>'+
+        '나의 투두'+
+      '</div>'+
+      (state.personalTodos.length?state.personalTodos.map(function(t){
+        return '<div class="todo-item">'+
+          '<input type="checkbox"'+(t.done?' checked':'')+' onchange="toggleTodo(\''+t.id+'\','+t.done+')">'+
+          '<span class="todo-item-text'+(t.done?' done':'')+'">'+esc(t.title)+'</span>'+
+          '<button class="todo-del" onclick="deleteTodo(\''+t.id+'\')">×</button>'+
+        '</div>';
+      }).join(''):'<div style="font-size:12px;color:var(--h);padding:4px 0;">아직 투두가 없어요</div>')+
+      '<div class="todo-input-row">'+
+        '<input class="todo-input" id="personal-todo-input" placeholder="개인 할 일 추가..." onkeydown="if(event.key===\'Enter\')addTodo(false)">'+
+        '<button class="todo-add-btn" onclick="addTodo(false)">추가</button>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+function buildQATab(){
+  var post=state.posts.find(p=>p.id===state.selPost);
+  return '<div>'+
+    '<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">'+
+      '<button class="study-btn primary" style="width:auto;padding:7px 14px;font-size:12px;" onclick="state.showQAForm=!state.showQAForm;render()">'+
+        (state.showQAForm?'취소':'+ 질문 작성')+
+      '</button>'+
+    '</div>'+
+    (state.showQAForm?'<div class="todo-section" style="margin-bottom:12px;">'+
+      '<div class="todo-section-title">새 질문</div>'+
+      '<div style="display:flex;flex-direction:column;gap:8px;">'+
+        '<input class="todo-input" id="qa-title" placeholder="질문 제목 *">'+
+        '<textarea class="todo-input" id="qa-body" rows="3" placeholder="질문 내용을 자세히 적어주세요" style="resize:vertical;line-height:1.6;"></textarea>'+
+        '<input class="todo-input" id="qa-tags" placeholder="태그 (쉼표 구분, 예: 알고리즘, CS)">'+
+        '<button class="study-btn primary" style="padding:9px;" onclick="addPost()">질문 등록</button>'+
+      '</div>'+
+    '</div>':'')+ 
+    (post?buildPostDetail(post):
+      (state.posts.length?state.posts.map(function(p){
+        return '<div class="qa-card" onclick="state.selPost=\''+p.id+'\';render()">'+
+          '<div class="qa-title">'+esc(p.title)+'</div>'+
+          '<div class="qa-meta">'+esc(p.displayName||'익명')+' · 답변 '+(p.answerCount||0)+'개'+
+            ((p.tags||[]).length?' · '+p.tags.slice(0,2).map(t=>'<span class="qa-tag">'+esc(t)+'</span>').join(' '):'')+
+          '</div>'+
+        '</div>';
+      }).join(''):
+      '<div class="study-empty"><div style="font-size:28px;opacity:0.2;">Q</div><div>아직 질문이 없어요<br>첫 질문을 작성해보세요!</div></div>')
+  )+'</div>';
+}
+
+var _answerCache={};
+function buildPostDetail(post){
+  var answers=_answerCache[post.id]||[];
+  if(!_answerCache[post.id]){
+    loadAnswers(post.id).then(function(ans){_answerCache[post.id]=ans;render();});
+  }
+  return '<div>'+
+    '<button onclick="state.selPost=null;render()" style="border:none;background:none;color:var(--mint);font-size:13px;cursor:pointer;margin-bottom:10px;">← 목록으로</button>'+
+    '<div class="cbox">'+
+      '<div style="font-size:15px;font-weight:700;margin-bottom:6px;">'+esc(post.title)+'</div>'+
+      ((post.tags||[]).length?'<div style="margin-bottom:8px;">'+post.tags.map(t=>'<span class="qa-tag" style="margin-right:4px;">'+esc(t)+'</span>').join('')+'</div>':'')+
+      '<div style="font-size:13px;color:var(--text2);white-space:pre-wrap;line-height:1.7;">'+esc(post.body||'')+'</div>'+
+      '<div style="font-size:11px;color:var(--h);margin-top:8px;">'+esc(post.displayName||'익명')+'</div>'+
+    '</div>'+
+    '<div style="font-size:12px;font-weight:700;color:var(--mu);margin:12px 0 8px;">답변 '+answers.length+'개</div>'+
+    answers.map(function(a){
+      var isMine=currentUser&&a.uid===currentUser.uid;
+      return '<div class="answer-box'+(a.isAccepted?' accepted':'')+'">'+
+        (a.isAccepted?'<div style="font-size:10px;color:var(--mint);font-weight:700;margin-bottom:6px;">✓ 채택된 답변</div>':'')+
+        '<div style="font-size:13px;color:var(--text2);white-space:pre-wrap;line-height:1.7;">'+esc(a.body)+'</div>'+
+        (a.solutionUrl?'<a href="'+esc(a.solutionUrl)+'" target="_blank" style="font-size:11px;color:var(--mint);display:inline-block;margin-top:6px;">풀이 보기 ↗</a>':'')+
+        '<div class="answer-meta">'+
+          '<span>'+esc(a.displayName||'익명')+'</span>'+
+          (!a.isAccepted&&isMine===false&&post.uid===currentUser.uid?
+            '<button onclick="acceptAnswer(\''+a.id+'\')" style="border:none;background:var(--mintl);color:var(--mint);padding:3px 10px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;">채택</button>':'')+ 
+        '</div>'+
+      '</div>';
+    }).join('')+
+    '<div style="margin-top:12px;">'+
+      '<button class="study-btn" style="padding:8px;margin-bottom:8px;" onclick="state.showAnsForm=!state.showAnsForm;render()">'+
+        (state.showAnsForm?'취소':'+ 답변 작성')+
+      '</button>'+
+      (state.showAnsForm?'<div class="todo-section">'+
+        '<textarea class="todo-input" id="ans-body" rows="3" placeholder="답변 내용 *" style="margin-bottom:8px;resize:vertical;line-height:1.6;"></textarea>'+
+        '<input class="todo-input" id="ans-url" placeholder="풀이 링크 (선택, GitHub / Notion 등)" style="margin-bottom:8px;">'+
+        '<button class="study-btn primary" style="padding:9px;width:100%;" onclick="addAnswer()">답변 등록</button>'+
+      '</div>':'')+ 
+    '</div>'+
+  '</div>';
+}
+
+function buildStudyModal(){
+  var isCreate=state.studyModal==='create';
+  return '<div class="study-modal-overlay">'+
+    '<div class="study-modal">'+
+      '<div class="study-modal-title">'+(isCreate?'새 스터디 만들기':'초대코드로 참여')+'</div>'+
+      (isCreate?
+        '<div style="margin-bottom:12px;"><div class="mlabel">스터디 이름</div><input id="new-study-name" class="minput" placeholder="예: 코딩테스트 스터디" autofocus></div>':
+        '<div style="margin-bottom:12px;"><div class="mlabel">초대코드 6자리</div><input id="join-code" class="minput" placeholder="예: ABC123" style="letter-spacing:3px;text-transform:uppercase;" autofocus></div>')+
+      '<div class="modal-ftr">'+
+        '<button class="btn-cancel-m" onclick="state.studyModal=null;render()">취소</button>'+
+        '<button class="btn-save-m" onclick="'+(isCreate?'createStudy()':'joinStudy()')+'">'+
+          (isCreate?'만들기':'참여하기')+
+        '</button>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+/* ====== ATTACH ====== */
+function attachAll(){}
+
+/* ====== ACTIONS ====== */
+function navTo(p){state.page=p;render();}
+function toggleView(){state.view=state.view==='cal'?'list':'cal';render();}
+function selectJob(id){state.selId=id;state.tab='기본정보';state.delConfirm=false;render();}
+function calSel(id){state.selId=id;state.tab='기본정보';state.delConfirm=false;state.view='list';render();}
+function setCat(id){state.cat=id;state.astats=[];render();}
+function toggleStat(sid){var i=state.astats.indexOf(sid);if(i>-1)state.astats.splice(i,1);else state.astats.push(sid);render();}
+function clearStats(){state.astats=[];render();}
+function setSort(v){state.sort=v;render();}
+function setSearch(v){state.search=v;render();}
+function setTab(t){state.tab=t;render();}
+function setStatus(sid){var j=state.jobs.find(j=>j.id===state.selId);if(j){j.status=sid;saveAll();render();}}
+function startDel(){state.delConfirm=true;render();}
+function cancelDel(){state.delConfirm=false;render();}
+function deleteJob(){state.jobs=state.jobs.filter(j=>j.id!==state.selId);state.selId=null;state.delConfirm=false;saveAll();render();}
+function openAdd(){state.modal='add';state.editJob={company:'',role:'',status:'none',deadline:'',deadlineTime:'',industry:'',siteUrl:'',interviews:[]};render();}
+function openEdit(){var j=state.jobs.find(j=>j.id===state.selId);if(j){state.modal='edit';state.editJob=JSON.parse(JSON.stringify(j));render();}}
+function closeModal(){state.modal=null;state.editJob=null;render();}
+function mStat(sid){if(state.editJob){state.editJob.status=sid;render();}}
+function saveModal(){
+  var comp=document.getElementById('m-company').value.trim(),role=document.getElementById('m-role').value.trim();
+  if(!comp||!role){alert('회사명과 직무는 필수입니다.');return;}
+  var iv=document.getElementById('m-iv').value;
+  var interviews=iv?iv.split(',').map(s=>s.trim()).filter(Boolean):[];
+  var d={company:comp,role:role,status:state.editJob.status||'none',deadline:document.getElementById('m-deadline').value,deadlineTime:document.getElementById('m-dtime').value,industry:document.getElementById('m-industry').value.trim(),siteUrl:document.getElementById('m-site').value.trim(),interviews};
+  if(state.modal==='add'){var nj=Object.assign({id:Date.now(),ia:'',ca:'',ja:'',jd:'',cls:[],memo:'',ca_at:Date.now()},d);state.jobs.push(nj);state.selId=nj.id;state.tab='기본정보';}
+  else{var j=state.jobs.find(j=>j.id===state.editJob.id);if(j)Object.assign(j,d);}
+  state.modal=null;state.editJob=null;saveAll();render();
+}
+function addCL(){var j=state.jobs.find(j=>j.id===state.selId);if(j){if(!j.cls)j.cls=[];j.cls.push({id:Date.now(),q:'',a:'',lim:500});saveAll();render();}}
+function deleteCL(cid){if(!confirm('이 문항을 삭제하시겠어요?'))return;var j=state.jobs.find(j=>j.id===state.selId);if(j){j.cls=j.cls.filter(c=>c.id!==cid);saveAll();render();}}
+function calPrev(){state.calM--;if(state.calM<0){state.calM=11;state.calY--;}render();}
+function calNext(){state.calM++;if(state.calM>11){state.calM=0;state.calY++;}render();}
+
+function selArt(id){state.selArt=id;state.editArt=null;render();}
+function openAddArt(){state.editArt={id:null,title:'',url:'',company:'',tags:[],memo:'',date:'',ca_at:Date.now()};state.selArt=null;render();}
+function editArtClick(id){var a=state.arts.find(x=>x.id===id);if(a){state.editArt=JSON.parse(JSON.stringify(a));render();}}
+function deleteArt(id){if(!confirm('이 기사를 삭제하시겠어요?'))return;state.arts=state.arts.filter(a=>a.id!==id);if(state.selArt===id)state.selArt=null;saveAll();render();}
+function cancelArt(){state.editArt=null;render();}
+function saveArt(){
+  var title=document.getElementById('art-title').value.trim();if(!title){alert('제목을 입력하세요');return;}
+  var tagsRaw=document.getElementById('art-tags').value;
+  var tags=tagsRaw?tagsRaw.split(',').map(s=>s.trim()).filter(Boolean):[];
+  var d={title,url:document.getElementById('art-url').value.trim(),company:document.getElementById('art-company').value.trim(),tags,memo:document.getElementById('art-memo').value,date:document.getElementById('art-date').value};
+  if(state.editArt&&state.editArt.id){var a=state.arts.find(x=>x.id===state.editArt.id);if(a)Object.assign(a,d);state.selArt=state.editArt.id;}
+  else{var na=Object.assign({id:Date.now(),ca_at:Date.now()},d);state.arts.push(na);state.selArt=na.id;}
+  state.editArt=null;saveAll();render();
+}
+
+function selExp(id){state.selExp=id;state.editExp=null;render();}
+function openAddExp(){state.editExp={id:null,title:'',tags:[],situation:'',task:'',action:'',result:''};state.selExp=null;render();}
+function editExpClick(id){var e=state.exps.find(x=>x.id===id);if(e){state.editExp=JSON.parse(JSON.stringify(e));render();}}
+function deleteExp(id){if(!confirm('이 경험을 삭제하시겠어요?'))return;state.exps=state.exps.filter(e=>e.id!==id);if(state.selExp===id)state.selExp=null;saveAll();render();}
+function cancelExp(){state.editExp=null;render();}
+function saveExp(){
+  var title=document.getElementById('exp-title').value.trim();if(!title){alert('제목을 입력하세요');return;}
+  var tagsRaw=document.getElementById('exp-tags').value;
+  var tags=tagsRaw?tagsRaw.split(',').map(s=>s.trim()).filter(Boolean):[];
+  var d={title,tags,situation:document.getElementById('exp-situation').value,task:document.getElementById('exp-task').value,action:document.getElementById('exp-action').value,result:document.getElementById('exp-result').value};
+  if(state.editExp&&state.editExp.id){var e=state.exps.find(x=>x.id===state.editExp.id);if(e)Object.assign(e,d);state.selExp=state.editExp.id;}
+  else{var ne=Object.assign({id:Date.now(),ca_at:Date.now()},d);state.exps.push(ne);state.selExp=ne.id;}
+  state.editExp=null;saveAll();render();
+}
 </script>
 </body>
 </html>
-
