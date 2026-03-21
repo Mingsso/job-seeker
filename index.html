@@ -208,18 +208,18 @@ textarea{resize:vertical;line-height:1.7;}
 .timer-stop:hover{background:#FECACA;}
 .timer-today{font-size:13px;color:var(--mu);background:#fff;border:1px solid var(--br);border-radius:10px;padding:8px 18px;}
 .todo-section{background:#fff;border-radius:14px;border:1px solid var(--br);padding:14px;margin-bottom:12px;}
-.todo-section-title{font-size:12px;font-weight:700;color:var(--mu);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.todo-section-title{font-size:14px;font-weight:700;color:var(--mu);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
 .todo-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--br);}
 .todo-item:last-child{border-bottom:none;}
 .todo-item input[type=checkbox]{width:16px;height:16px;accent-color:var(--mint);cursor:pointer;flex-shrink:0;}
-.todo-item-text{flex:1;font-size:13px;color:var(--text1);}
+.todo-item-text{flex:1;font-size:15px;color:var(--text1);}
 .todo-item-text.done{text-decoration:line-through;color:var(--h);}
 .todo-del{border:none;background:none;color:var(--h);font-size:14px;cursor:pointer;padding:2px 5px;border-radius:4px;}
 .todo-del:hover{color:#DC2626;background:#FEE2E2;}
 .todo-input-row{display:flex;gap:6px;margin-top:8px;}
-.todo-input{flex:1;padding:8px 11px;border:1.5px solid var(--br);border-radius:9px;font-size:13px;outline:none;background:#F8F9FA;color:var(--text1);}
+.todo-input{flex:1;padding:9px 13px;border:1.5px solid var(--br);border-radius:9px;font-size:14px;outline:none;background:#F8F9FA;color:var(--text1);}
 .todo-input:focus{border-color:var(--mint);background:#fff;}
-.todo-add-btn{padding:8px 13px;border:none;border-radius:9px;background:var(--mint);color:#fff;font-size:12px;font-weight:700;cursor:pointer;}
+.todo-add-btn{padding:9px 14px;border:none;border-radius:9px;background:var(--mint);color:#fff;font-size:13px;font-weight:700;cursor:pointer;}
 .qa-card{background:#fff;border-radius:12px;border:1px solid var(--br);padding:13px;margin-bottom:8px;cursor:pointer;transition:all 0.15s;}
 .qa-card:hover{border-color:var(--mintm);}
 .qa-card.sel{border-color:var(--mint);background:var(--mintl);}
@@ -383,7 +383,6 @@ var M='#3EB489',ML='#E8F7F0',MM='#B8E8D4',MB='#F4FAF7',BR='#D1EAE0',MU='#6B9E87'
 var ST=[
   {id:'none',label:'미지원',c:'#6B7280',bg:'#F3F4F6',grp:'준비'},
   {id:'writing',label:'작성시작',c:'#B45309',bg:'#FEF3C7',grp:'준비'},
-  {id:'applied',label:'지원완료',c:'#1D4ED8',bg:'#DBEAFE',grp:'준비'},
   {id:'docs',label:'서류제출',c:'#0E7490',bg:'#CFFAFE',grp:'전형'},
   {id:'apt',label:'인적성',c:'#6D28D9',bg:'#EDE9FE',grp:'전형'},
   {id:'int1',label:'면접1차',c:'#047857',bg:'#D1FAE5',grp:'전형'},
@@ -396,7 +395,7 @@ var ST=[
 ];
 var CATS=[
   {id:'전체',label:'전체',desc:'모든 공고',statuses:null,ac:'#6B7280',abg:'#F3F4F6'},
-  {id:'준비',label:'준비 중',desc:'미지원·작성·완료',statuses:['none','writing','applied'],ac:'#1D4ED8',abg:'#DBEAFE'},
+  {id:'준비',label:'준비 중',desc:'미지원·작성시작',statuses:['none','writing'],ac:'#B45309',abg:'#FEF3C7'},
   {id:'전형',label:'전형 진행',desc:'서류·인적성·면접',statuses:['docs','apt','int1','int2','int3'],ac:'#047857',abg:'#D1FAE5'},
   {id:'결과',label:'결과',desc:'미발표·탈락·합격',statuses:['pending','docs_fail','int_fail','pass'],ac:'#DC2626',abg:'#FEE2E2'},
 ];
@@ -407,7 +406,6 @@ var NAV=[
   {id:'experience',label:'경험',sym:'◈'},
   {id:'passbank',label:'합격자소서',sym:'★'},
   {id:'study',label:'스터디',sym:'⏱'},
-  {id:'stats',label:'통계',sym:'▣'},
 ];
 var STAR_KEYS=[
   {k:'situation',l:'상황 (Situation)',c:'#1D4ED8',cb:'#EFF6FF',ph:'어떤 상황이었나요?'},
@@ -661,17 +659,30 @@ function buildRight(){
 
 /* ====== BASIC TAB ====== */
 function buildBasic(job){
+  var applied=state.jobs.filter(j=>j.status!=='writing'&&j.status).length;
+  var passed=state.jobs.filter(j=>j.status==='pass').length;
+  var inProgress=state.jobs.filter(j=>['docs','apt','int1','int2','int3'].includes(j.status)).length;
   return '<div>'+
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">'+
+      '<div class="stat-card"><div class="stat-num" style="font-size:18px;">'+state.jobs.length+'</div><div class="stat-label">전체 공고</div></div>'+
+      '<div class="stat-card"><div class="stat-num" style="font-size:18px;color:#047857;">'+inProgress+'</div><div class="stat-label">전형 진행중</div></div>'+
+      '<div class="stat-card"><div class="stat-num" style="font-size:18px;color:#DC2626;">'+passed+'</div><div class="stat-label">최종 합격</div></div>'+
+    '</div>'+
     '<div class="cbox">'+
-      '<div class="cbox-title">진행 상태</div>'+
-      CATS.filter(c=>c.statuses).map(cat=>
-        '<div style="margin-bottom:8px;">'+
-          '<div style="font-size:8px;padding:1px 6px;background:'+cat.abg+';color:'+cat.ac+';border-radius:8px;display:inline-block;margin-bottom:4px;font-weight:600;">'+cat.label+'</div>'+
-          '<div style="display:flex;flex-wrap:wrap;gap:3px;">'+
-            cat.statuses.map(sid=>{var s=gs(sid),on=job.status===sid;return'<button onclick="setStatus(\''+sid+'\')" style="font-size:10px;padding:3px 10px;border-radius:20px;border:1.5px solid '+(on?s.c:BR)+';background:'+(on?s.bg:'#fff')+';color:'+s.c+';cursor:pointer;">'+(on?'✓ ':'')+s.label+'</button>';}).join('')+
+      '<div class="cbox-title">진행 상태 <span style="font-size:11px;color:var(--h);font-weight:400;">(전형·결과는 복수 선택 가능)</span></div>'+
+      CATS.filter(c=>c.statuses).map(cat=>{
+        var isMulti=cat.id==='전형'||cat.id==='결과';
+        return '<div style="margin-bottom:8px;">'+
+          '<div style="font-size:11px;padding:2px 8px;background:'+cat.abg+';color:'+cat.ac+';border-radius:8px;display:inline-block;margin-bottom:5px;font-weight:600;">'+cat.label+'</div>'+
+          '<div style="display:flex;flex-wrap:wrap;gap:4px;">'+
+            cat.statuses.map(sid=>{
+              var s=gs(sid);
+              var on=isMulti?(job.statuses||[job.status]).includes(sid):job.status===sid;
+              return '<button onclick="'+(isMulti?'toggleStatus(\''+sid+'\')':'setStatus(\''+sid+'\')')+'" style="font-size:12px;padding:4px 12px;border-radius:20px;border:1.5px solid '+(on?s.c:BR)+';background:'+(on?s.bg:'#fff')+';color:'+s.c+';cursor:pointer;font-weight:'+(on?700:400)+';">'+(on?'✓ ':'')+s.label+'</button>';
+            }).join('')+
           '</div>'+
-        '</div>'
-      ).join('')+
+        '</div>';
+      }).join('')+
     '</div>'+
     '<div class="cbox">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'+
@@ -679,11 +690,11 @@ function buildBasic(job){
         '<button id="ai-interview-btn" class="ai-btn" onclick="aiInterviewQuestions(\''+esc(job.company)+'\',\''+esc(job.role)+'\',\''+esc(job.jd||'')+'\')">✦ 면접 예상질문</button>'+
       '</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:8px;">'+
-        '<div><div class="flabel2">마감일</div><div style="font-size:12px;">'+(job.deadline?fd(job.deadline):'-')+'</div></div>'+
-        '<div><div class="flabel2">마감시간</div><div style="font-size:12px;">'+(job.deadlineTime?fmt12(job.deadlineTime):'-')+'</div></div>'+
-        '<div><div class="flabel2">D-day</div><div style="font-size:12px;font-weight:600;color:'+dday(job.deadline,job.deadlineTime).color+'">'+(dday(job.deadline,job.deadlineTime).label||'-')+'</div></div>'+
+        '<div><div class="flabel2">마감일</div><div style="font-size:13px;">'+(job.deadline?fd(job.deadline):'-')+'</div></div>'+
+        '<div><div class="flabel2">마감시간</div><div style="font-size:13px;">'+(job.deadlineTime?fmt12(job.deadlineTime):'-')+'</div></div>'+
+        '<div><div class="flabel2">D-day</div><div style="font-size:13px;font-weight:600;color:'+dday(job.deadline,job.deadlineTime).color+'">'+(dday(job.deadline,job.deadlineTime).label||'-')+'</div></div>'+
       '</div>'+
-      ((job.interviews||[]).length?'<div style="border-top:1px solid '+BR+';padding-top:8px;"><div class="flabel2">면접 일정</div>'+job.interviews.map(d=>'<span style="font-size:10px;padding:2px 8px;background:#FEF3C7;border-radius:5px;color:#92400E;display:inline-block;margin:0 4px 4px 0;">'+fd(d)+'</span>').join('')+'</div>':'')+
+      ((job.interviews||[]).length?'<div style="border-top:1px solid '+BR+';padding-top:8px;"><div class="flabel2">면접 일정</div>'+job.interviews.map(d=>'<span style="font-size:12px;padding:2px 8px;background:#FEF3C7;border-radius:5px;color:#92400E;display:inline-block;margin:0 4px 4px 0;">'+fd(d)+'</span>').join('')+'</div>':'')+
       '<div id="ai-interview-result"></div>'+
     '</div>'+
     buildSavableSite(job)+
@@ -1634,9 +1645,9 @@ function buildStudyCalendar(){
     var todos=todosByDate[d]||[];
     var doneCnt=todos.filter(t=>t.done).length;
     cells+='<div onclick="state.selCalDate='+(isSel?'null':d)+';render()" style="min-height:80px;padding:6px;border:1.5px solid '+(isSel?'var(--mint)':isT?'var(--mint)':'var(--br)')+';border-radius:10px;background:'+(isSel?'#EAF7F1':isT?'var(--mintl)':'#fff')+';cursor:pointer;transition:all 0.1s;">'+
-      '<div style="font-size:12px;font-weight:'+(isT||isSel?700:500)+';color:'+(isT||isSel?'var(--mint)':'#444')+';margin-bottom:3px;">'+d+'</div>'+
+      '<div style="font-size:13px;font-weight:'+(isT||isSel?700:500)+';color:'+(isT||isSel?'var(--mint)':'#444')+';margin-bottom:3px;">'+d+'</div>'+
       todos.slice(0,3).map(function(t){
-        return '<div style="font-size:10px;padding:2px 5px;border-radius:5px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:'+(t.done?'#D1FAE5':'var(--mintl)')+';color:'+(t.done?'#065F46':'var(--mint)')+(t.done?';text-decoration:line-through':'')+'">'+(t.done?'✓ ':'')+esc(t.title)+'</div>';
+        return '<div style="font-size:12px;padding:3px 6px;border-radius:5px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:'+(t.done?'#D1FAE5':'var(--mintl)')+';color:'+(t.done?'#065F46':'var(--mint)')+(t.done?';text-decoration:line-through':'')+'">'+(t.done?'✓ ':'')+esc(t.title)+'</div>';
       }).join('')+
       (todos.length>3?'<div style="font-size:9px;color:var(--h);">+'+( todos.length-3)+' 더</div>':'')+
       (todos.length>0?'<div style="font-size:9px;color:var(--mint);font-weight:600;margin-top:2px;">'+doneCnt+'/'+todos.length+' 완료</div>':'')+
@@ -1785,16 +1796,17 @@ function callAI(prompt,targetId,btnId,append){
 }
 
 function showPremiumModal(){
-  var modal=document.createElement('div');
-  modal.style.cssText='position:fixed;inset:0;background:rgba(25,31,40,0.5);z-index:999;display:flex;align-items:center;justify-content:center;';
-  modal.innerHTML='<div style="background:#fff;border-radius:20px;padding:32px;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.15);">'+
-    '<div style="font-size:36px;margin-bottom:12px;">✦</div>'+
-    '<div style="font-size:18px;font-weight:800;color:#3C3489;margin-bottom:8px;">프리미엄 기능</div>'+
-    '<div style="font-size:14px;color:#6B7684;line-height:1.7;margin-bottom:20px;">AI 자소서 첨삭, 기업 분석 자동완성,<br>면접 예상질문 생성은<br><strong style="color:#3C3489;">프리미엄 버전</strong>에서 이용 가능해요.</div>'+
-    '<button onclick="this.closest(\'div[style]\').remove()" style="width:100%;padding:12px;border:none;border-radius:12px;background:#534AB7;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">확인</button>'+
-  '</div>';
-  document.body.appendChild(modal);
-  modal.addEventListener('click',function(e){if(e.target===modal)modal.remove();});
+  var existing=document.getElementById('premium-popup');
+  if(existing){existing.remove();return;}
+  var popup=document.createElement('div');
+  popup.id='premium-popup';
+  popup.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:20px;padding:28px 24px;width:300px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.15);z-index:999;border:1.5px solid #AFA9EC;';
+  popup.innerHTML=
+    '<div style="font-size:28px;margin-bottom:10px;">✦</div>'+
+    '<div style="font-size:16px;font-weight:800;color:#3C3489;margin-bottom:8px;">프리미엄 기능</div>'+
+    '<div style="font-size:13px;color:#6B7684;line-height:1.7;margin-bottom:18px;">AI 자소서 첨삭, 기업 분석 자동완성,<br>면접 예상질문 생성은<br><strong style="color:#3C3489;">프리미엄 버전</strong>에서 이용 가능해요.</div>'+
+    '<button onclick="document.getElementById(\'premium-popup\').remove()" style="width:100%;padding:11px;border:none;border-radius:12px;background:#534AB7;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">확인</button>';
+  document.body.appendChild(popup);
 }
 
 function saveApiKey(){
@@ -1937,7 +1949,15 @@ function clearStats(){state.astats=[];render();}
 function setSort(v){state.sort=v;render();}
 function setSearch(v){state.search=v;render();}
 function setTab(t){state.tab=t;render();}
-function setStatus(sid){var j=state.jobs.find(j=>j.id===state.selId);if(j){j.status=sid;saveAll();render();}}
+function setStatus(sid){var j=state.jobs.find(j=>j.id===state.selId);if(j){j.status=sid;j.statuses=[sid];saveAll();render();}}
+function toggleStatus(sid){
+  var j=state.jobs.find(j=>j.id===state.selId);if(!j)return;
+  if(!j.statuses)j.statuses=[j.status].filter(Boolean);
+  var idx=j.statuses.indexOf(sid);
+  if(idx>-1)j.statuses.splice(idx,1);else j.statuses.push(sid);
+  if(j.statuses.length>0)j.status=j.statuses[j.statuses.length-1];
+  saveAll();render();
+}
 function startDel(){state.delConfirm=true;render();}
 function cancelDel(){state.delConfirm=false;render();}
 function deleteJob(){state.jobs=state.jobs.filter(j=>j.id!==state.selId);state.selId=null;state.delConfirm=false;saveAll();render();}
