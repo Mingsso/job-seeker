@@ -410,7 +410,8 @@ var state={
   selArt:null,editArt:null,selExp:null,editExp:null,
   lastSaved:null,dirty:{},leftW:260,
   analysisJob:null,analysisTab:'ia',
-  studyTab:'timer',myStudies:[],selStudy:null,
+  studyTab:'calendar',myStudies:[],selStudy:null,
+  studyLeftCollapsed:false,
   timerRunning:false,timerPaused:false,timerElapsed:0,timerSessionId:null,timerInterval:null,
   timerSessions:[],
   sharedTodos:[],personalTodos:[],
@@ -1085,10 +1086,11 @@ function loadMyStudies(){
 
 function selectStudy(id){
   state.selStudy=id;
-  state.studyTab='timer';
+  state.studyTab='calendar';
   state.selPost=null;
   state.timerSessions=[];
   state.studyMembers={};
+  state.studyLeftCollapsed=true;
   loadStudyRealtime(id);
   render();
 }
@@ -1147,7 +1149,11 @@ function loadStudyRealtime(studyId){
 
 async function createStudy(){
   var name=document.getElementById('new-study-name').value.trim();
+  var nickname=document.getElementById('modal-nickname').value.trim();
   if(!name){alert('스터디 이름을 입력하세요');return;}
+  if(nickname){
+    await db.collection('users').doc(currentUser.uid).set({displayName:nickname,photoURL:currentUser.photoURL||'',uid:currentUser.uid},{merge:true});
+  }
   var code=genCode();
   await db.collection('studies').add({
     name,inviteCode:code,
@@ -1159,7 +1165,11 @@ async function createStudy(){
 
 async function joinStudy(){
   var code=document.getElementById('join-code').value.trim().toUpperCase();
+  var nickname=document.getElementById('modal-nickname').value.trim();
   if(!code){alert('초대코드를 입력하세요');return;}
+  if(nickname){
+    await db.collection('users').doc(currentUser.uid).set({displayName:nickname,photoURL:currentUser.photoURL||'',uid:currentUser.uid},{merge:true});
+  }
   var snap=await db.collection('studies').where('inviteCode','==',code).get();
   if(snap.empty){alert('초대코드를 찾을 수 없어요.');return;}
   var studyId=snap.docs[0].id;
@@ -1193,12 +1203,15 @@ function timerPause(){
 
 async function timerStop(){
   clearInterval(state.timerInterval);
-  if(state.timerSessionId&&state.timerElapsed>0){
+  var elapsed=state.timerElapsed;
+  if(state.timerSessionId&&elapsed>0){
+    var session={id:state.timerSessionId,uid:currentUser.uid,studyId:state.selStudy,startedAt:new Date(),endedAt:new Date(),duration:elapsed};
+    state.timerSessions=[session].concat(state.timerSessions);
     await db.collection('timerSessions').doc(state.timerSessionId).update({
-      endedAt:new Date(),duration:state.timerElapsed
+      endedAt:new Date(),duration:elapsed
     });
     await db.collection('users').doc(currentUser.uid).set(
-      {studyTime:firebase.firestore.FieldValue.increment(state.timerElapsed)},{merge:true}
+      {studyTime:firebase.firestore.FieldValue.increment(elapsed)},{merge:true}
     );
   }
   state.timerRunning=false;state.timerPaused=false;state.timerSessionId=null;state.timerElapsed=0;
@@ -1260,7 +1273,7 @@ async function addPost(){
   var body=document.getElementById('qa-body').value.trim();
   var tags=document.getElementById('qa-tags').value.split(',').map(s=>s.trim()).filter(Boolean);
   if(!title){alert('제목을 입력하세요');return;}
-  await db.collection('posts').add({
+  var newPost={
     title,body,tags,
     uid:currentUser.uid,
     displayName:currentUser.displayName||'익명',
@@ -1269,9 +1282,13 @@ async function addPost(){
     studyId:state.selStudy,
     answerCount:0,
     createdAt:new Date()
-  });
+  };
+  var ref=await db.collection('posts').add(newPost);
+  newPost.id=ref.id;
+  state.posts=[newPost].concat(state.posts);
   _qaImageBase64='';
-  state.showQAForm=false;showToast('질문 등록됨 ✓');
+  state.showQAForm=false;
+  render();showToast('질문 등록됨 ✓');
 }
 
 async function addAnswer(){
@@ -1326,10 +1343,23 @@ function buildStudyPage(){
 }
 
 function buildStudyLeft(){
+  if(state.studyLeftCollapsed&&state.selStudy){
+    return '<div style="width:40px;flex-shrink:0;border-right:1px solid var(--br);background:#fff;display:flex;flex-direction:column;align-items:center;padding-top:10px;gap:8px;">'+
+      '<button onclick="state.studyLeftCollapsed=false;render()" style="border:none;background:var(--mintl);color:var(--mint);width:28px;height:28px;border-radius:50%;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="목록 펼치기">›</button>'+
+      state.myStudies.map(s=>{
+        var sel=state.selStudy===s.id;
+        return '<div onclick="selectStudy(\''+s.id+'\')" style="width:28px;height:28px;border-radius:50%;background:'+(sel?'var(--mint)':'var(--mintl)')+';color:'+(sel?'#fff':'var(--mint)')+';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;" title="'+esc(s.name)+'">'+esc(s.name[0])+'</div>';
+      }).join('')+
+      '<button onclick="state.studyModal=\'create\';render()" style="border:none;background:#F2F4F6;color:var(--mu);width:28px;height:28px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>'+
+    '</div>';
+  }
   return '<div class="study-left">'+
-    '<div class="study-btn-row">'+
-      '<button class="study-btn primary" onclick="state.studyModal=\'create\';render()">+ 생성</button>'+
-      '<button class="study-btn" onclick="state.studyModal=\'join\';render()">코드 참여</button>'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 10px 4px;">'+
+      '<div style="display:flex;gap:6px;flex:1;">'+
+        '<button class="study-btn primary" onclick="state.studyModal=\'create\';render()">+ 생성</button>'+
+        '<button class="study-btn" onclick="state.studyModal=\'join\';render()">코드 참여</button>'+
+      '</div>'+
+      (state.selStudy?'<button onclick="state.studyLeftCollapsed=true;render()" style="border:none;background:var(--mintl);color:var(--mint);width:26px;height:26px;border-radius:50%;font-size:14px;cursor:pointer;flex-shrink:0;margin-left:4px;" title="목록 접기">‹</button>':'')+
     '</div>'+
     '<div style="overflow-y:auto;flex:1;">'+
       (state.myStudies.length?state.myStudies.map(s=>{
@@ -1381,7 +1411,7 @@ function buildStudyRight(study){
       '</div>'+
     '</div>'+
     '<div class="study-tabs">'+
-      [['timer','⏱ 타이머'],['todos','✓ 투두'],['calendar','📅 캘린더'],['qa','Q&A']].map(function(t){
+      [['calendar','📅 캘린더'],['timer','⏱ 타이머'],['todos','✓ 투두'],['qa','Q&A']].map(function(t){
         return '<button class="study-tab'+(state.studyTab===t[0]?' active':'')+'" onclick="state.studyTab=\''+t[0]+'\';render()">'+t[1]+'</button>';
       }).join('')+
     '</div>'+
@@ -1622,9 +1652,10 @@ function buildStudyModal(){
   return '<div class="study-modal-overlay">'+
     '<div class="study-modal">'+
       '<div class="study-modal-title">'+(isCreate?'새 스터디 만들기':'초대코드로 참여')+'</div>'+
+      '<div style="margin-bottom:12px;"><div class="mlabel">닉네임</div><input id="modal-nickname" class="minput" placeholder="스터디에서 사용할 이름" value="'+(currentUser&&currentUser.displayName||'')+'" autofocus></div>'+
       (isCreate?
-        '<div style="margin-bottom:12px;"><div class="mlabel">스터디 이름</div><input id="new-study-name" class="minput" placeholder="예: 코딩테스트 스터디" autofocus></div>':
-        '<div style="margin-bottom:12px;"><div class="mlabel">초대코드 6자리</div><input id="join-code" class="minput" placeholder="예: ABC123" style="letter-spacing:3px;text-transform:uppercase;" autofocus></div>')+
+        '<div style="margin-bottom:12px;"><div class="mlabel">스터디 이름</div><input id="new-study-name" class="minput" placeholder="예: 코딩테스트 스터디"></div>':
+        '<div style="margin-bottom:12px;"><div class="mlabel">초대코드 6자리</div><input id="join-code" class="minput" placeholder="예: ABC123" style="letter-spacing:3px;text-transform:uppercase;"></div>')+
       '<div class="modal-ftr">'+
         '<button class="btn-cancel-m" onclick="state.studyModal=null;render()">취소</button>'+
         '<button class="btn-save-m" onclick="'+(isCreate?'createStudy()':'joinStudy()')+'">'+
