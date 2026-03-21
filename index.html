@@ -199,10 +199,12 @@ var state={
   lastSaved:null,dirty:{},leftW:260,
   analysisJob:null,analysisTab:'ia',
   studyTab:'timer',myStudies:[],selStudy:null,
-  timerRunning:false,timerElapsed:0,timerSessionId:null,timerInterval:null,
+  timerRunning:false,timerPaused:false,timerElapsed:0,timerSessionId:null,timerInterval:null,
+  timerSessions:[],
   sharedTodos:[],personalTodos:[],
   posts:[],selPost:null,showQAForm:false,showAnsForm:false,
-  studyModal:null,
+  studyModal:null,studyMembers:{},
+  studyCalY:new Date().getFullYear(),studyCalM:new Date().getMonth(),
   _studyUnsub:[],
 };
 
@@ -854,6 +856,12 @@ function genCode(){return Math.random().toString(36).substring(2,8).toUpperCase(
 function loadMyStudies(){
   state._studyUnsub.forEach(fn=>fn());
   state._studyUnsub=[];
+  // Save user profile on every login
+  db.collection('users').doc(currentUser.uid).set({
+    displayName:currentUser.displayName||'익명',
+    photoURL:currentUser.photoURL||'',
+    uid:currentUser.uid
+  },{merge:true});
   var unsub=db.collection('studies')
     .where('members','array-contains',currentUser.uid)
     .onSnapshot(function(snap){
@@ -861,6 +869,558 @@ function loadMyStudies(){
       if(state.page==='study') render();
     });
   state._studyUnsub.push(unsub);
+}
+
+function selectStudy(id){
+  state.selStudy=id;
+  state.studyTab='timer';
+  state.selPost=null;
+  state.timerSessions=[];
+  state.studyMembers={};
+  loadStudyRealtime(id);
+  render();
+}
+
+function loadStudyRealtime(studyId){
+  state._studyUnsub.slice(1).forEach(fn=>fn());
+  state._studyUnsub=state._studyUnsub.slice(0,1);
+
+  var u1=db.collection('todos')
+    .where('studyId','==',studyId).where('uid','==',null)
+    .onSnapshot(function(snap){
+      state.sharedTodos=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+      if(state.page==='study') render();
+    });
+
+  var u2=db.collection('todos')
+    .where('uid','==',currentUser.uid).where('studyId','==',null)
+    .onSnapshot(function(snap){
+      state.personalTodos=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+      if(state.page==='study') render();
+    });
+
+  var u3=db.collection('posts')
+    .where('studyId','==',studyId)
+    .orderBy('createdAt','desc')
+    .onSnapshot(function(snap){
+      state.posts=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+      _answerCache={};
+      if(state.page==='study') render();
+    });
+
+  var u4=db.collection('timerSessions')
+    .where('studyId','==',studyId)
+    .where('uid','==',currentUser.uid)
+    .orderBy('startedAt','desc')
+    .limit(10)
+    .onSnapshot(function(snap){
+      state.timerSessions=snap.docs.map(d=>Object.assign({id:d.id},d.data()))
+        .filter(s=>s.duration>0);
+      if(state.page==='study'&&state.studyTab==='timer') render();
+    });
+
+  state._studyUnsub.push(u1,u2,u3,u4);
+
+  // Load member profiles
+  var study=state.myStudies.find(s=>s.id===studyId);
+  if(study&&study.members){
+    study.members.forEach(function(uid){
+      db.collection('users').doc(uid).get().then(function(doc){
+        if(doc.exists) state.studyMembers[uid]=doc.data();
+        if(state.page==='study') render();
+      });
+    });
+  }
+}
+
+async function createStudy(){
+  var name=document.getElementById('new-study-name').value.trim();
+  if(!name){alert('스터디 이름을 입력하세요');return;}
+  var code=genCode();
+  await db.collection('studies').add({
+    name,inviteCode:code,
+    members:[currentUser.uid],createdBy:currentUser.uid,
+    createdAt:new Date()
+  });
+  state.studyModal=null;render();showToast('스터디 생성! 초대코드: '+code);
+}
+
+async function joinStudy(){
+  var code=document.getElementById('join-code').value.trim().toUpperCase();
+  if(!code){alert('초대코드를 입력하세요');return;}
+  var snap=await db.collection('studies').where('inviteCode','==',code).get();
+  if(snap.empty){alert('초대코드를 찾을 수 없어요.');return;}
+  var studyId=snap.docs[0].id;
+  await db.collection('studies').doc(studyId).update({
+    members:firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+  });
+  state.studyModal=null;render();showToast('스터디 참여 완료!');
+}
+
+async function timerStart(){
+  var ref=await db.collection('timerSessions').add({
+    uid:currentUser.uid,studyId:state.selStudy,
+    startedAt:new Date(),endedAt:null,duration:0
+  });
+  state.timerSessionId=ref.id;
+  state.timerRunning=true;state.timerPaused=false;
+  state.timerInterval=setInterval(function(){
+    if(!state.timerPaused){
+      state.timerElapsed++;
+      var d=document.getElementById('timer-display');
+      if(d){d.textContent=fmtTime(state.timerElapsed);d.className='timer-display running';}
+    }
+  },1000);
+  render();
+}
+
+function timerPause(){
+  state.timerPaused=!state.timerPaused;
+  render();
+}
+
+async function timerStop(){
+  clearInterval(state.timerInterval);
+  if(state.timerSessionId&&state.timerElapsed>0){
+    await db.collection('timerSessions').doc(state.timerSessionId).update({
+      endedAt:new Date(),duration:state.timerElapsed
+    });
+    await db.collection('users').doc(currentUser.uid).set(
+      {studyTime:firebase.firestore.FieldValue.increment(state.timerElapsed)},{merge:true}
+    );
+  }
+  state.timerRunning=false;state.timerPaused=false;state.timerSessionId=null;state.timerElapsed=0;
+  render();showToast('공부 기록 저장됨 ✓');
+}
+
+function fmtTime(s){
+  var h=String(Math.floor(s/3600)).padStart(2,'0');
+  var m=String(Math.floor(s%3600/60)).padStart(2,'0');
+  var sec=String(s%60).padStart(2,'0');
+  return h+':'+m+':'+sec;
+}
+
+function fmtDate(ts){
+  if(!ts)return'';
+  var d=ts.toDate?ts.toDate():new Date(ts);
+  return (d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+
+async function addTodo(isShared){
+  var inputId=isShared?'shared-todo-input':'personal-todo-input';
+  var val=document.getElementById(inputId).value.trim();
+  if(!val)return;
+  var today=new Date();today.setHours(0,0,0,0);
+  await db.collection('todos').add({
+    title:val,done:false,
+    studyId:isShared?state.selStudy:null,
+    uid:isShared?null:currentUser.uid,
+    dueDate:today,
+    createdAt:new Date()
+  });
+  document.getElementById(inputId).value='';
+}
+
+async function toggleTodo(id,done){
+  await db.collection('todos').doc(id).update({done:!done});
+}
+
+async function deleteTodo(id){
+  await db.collection('todos').doc(id).delete();
+}
+
+var _qaImageBase64='';
+function handleQAImage(input){
+  var file=input.files[0];
+  if(!file)return;
+  if(file.size>500000){alert('이미지가 너무 커요. 500KB 이하로 올려주세요.');return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    _qaImageBase64=e.target.result;
+    var preview=document.getElementById('qa-img-preview');
+    if(preview){preview.src=_qaImageBase64;preview.style.display='block';}
+  };
+  reader.readAsDataURL(file);
+}
+
+async function addPost(){
+  var title=document.getElementById('qa-title').value.trim();
+  var body=document.getElementById('qa-body').value.trim();
+  var tags=document.getElementById('qa-tags').value.split(',').map(s=>s.trim()).filter(Boolean);
+  if(!title){alert('제목을 입력하세요');return;}
+  await db.collection('posts').add({
+    title,body,tags,
+    uid:currentUser.uid,
+    displayName:currentUser.displayName||'익명',
+    photoURL:currentUser.photoURL||'',
+    imageBase64:_qaImageBase64||'',
+    studyId:state.selStudy,
+    answerCount:0,
+    createdAt:new Date()
+  });
+  _qaImageBase64='';
+  state.showQAForm=false;showToast('질문 등록됨 ✓');
+}
+
+async function addAnswer(){
+  var body=document.getElementById('ans-body').value.trim();
+  var url=document.getElementById('ans-url').value.trim();
+  if(!body){alert('답변 내용을 입력하세요');return;}
+  await db.collection('posts').doc(state.selPost).collection('answers').add({
+    body,solutionUrl:url,
+    uid:currentUser.uid,
+    displayName:currentUser.displayName||'익명',
+    photoURL:currentUser.photoURL||'',
+    isAccepted:false,
+    createdAt:new Date()
+  });
+  await db.collection('posts').doc(state.selPost).update({
+    answerCount:firebase.firestore.FieldValue.increment(1)
+  });
+  state.showAnsForm=false;showToast('답변 등록됨 ✓');
+}
+
+async function acceptAnswer(answerId){
+  await db.collection('posts').doc(state.selPost).collection('answers').doc(answerId).update({isAccepted:true});
+  _answerCache={};showToast('답변 채택됨 ✓');
+}
+
+async function loadAnswers(postId){
+  var snap=await db.collection('posts').doc(postId).collection('answers').orderBy('createdAt').get();
+  return snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+}
+
+function copyInviteCode(code){
+  navigator.clipboard.writeText(code).then(function(){showToast('코드 복사됨: '+code);});
+}
+
+function avatar(photoURL,name,size){
+  size=size||28;
+  if(photoURL){
+    return '<img src="'+esc(photoURL)+'" style="width:'+size+'px;height:'+size+'px;border-radius:50%;object-fit:cover;border:1.5px solid var(--mintm);">';
+  }
+  var initials=(name||'?')[0].toUpperCase();
+  return '<div style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:var(--mintl);color:var(--mint);display:inline-flex;align-items:center;justify-content:center;font-size:'+(size/2.2|0)+'px;font-weight:700;flex-shrink:0;">'+initials+'</div>';
+}
+
+/* ── BUILD STUDY PAGE ── */
+function buildStudyPage(){
+  var study=state.myStudies.find(s=>s.id===state.selStudy);
+  return '<div class="study-layout">'+
+    buildStudyLeft()+
+    (study?buildStudyRight(study):buildStudyEmpty())+
+  '</div>'+
+  (state.studyModal?buildStudyModal():'');
+}
+
+function buildStudyLeft(){
+  return '<div class="study-left">'+
+    '<div class="study-btn-row">'+
+      '<button class="study-btn primary" onclick="state.studyModal=\'create\';render()">+ 생성</button>'+
+      '<button class="study-btn" onclick="state.studyModal=\'join\';render()">코드 참여</button>'+
+    '</div>'+
+    '<div style="overflow-y:auto;flex:1;">'+
+      (state.myStudies.length?state.myStudies.map(s=>{
+        var sel=state.selStudy===s.id;
+        return '<div class="study-card'+(sel?' sel':'')+'" onclick="selectStudy(\''+s.id+'\')">'+
+          '<div class="study-card-name">'+esc(s.name)+'</div>'+
+          '<div class="study-card-meta" style="display:flex;align-items:center;gap:4px;margin-top:4px;">'+
+            (s.members||[]).map(function(uid){
+              var m=state.studyMembers[uid];
+              return avatar(m&&m.photoURL,m&&m.displayName||'?',20);
+            }).join('')+
+            '<span style="margin-left:4px;font-size:10px;color:var(--h);">'+(s.members||[]).length+'명</span>'+
+          '</div>'+
+        '</div>';
+      }).join(''):
+      '<div style="padding:20px 12px;font-size:12px;color:var(--h);text-align:center;">스터디를 만들거나<br>초대코드로 참여하세요</div>')+
+    '</div>'+
+  '</div>';
+}
+
+function buildStudyEmpty(){
+  return '<div class="study-right"><div class="empty">'+
+    '<div class="empty-icon">⏱</div>'+
+    '<div>왼쪽에서 스터디를 선택하거나 만들어보세요</div>'+
+  '</div></div>';
+}
+
+function buildStudyRight(study){
+  var members=study.members||[];
+  return '<div class="study-right">'+
+    '<div class="rhdr">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">'+
+        '<div>'+
+          '<div style="font-size:15px;font-weight:700;color:var(--text1);">'+esc(study.name)+'</div>'+
+          '<div style="display:flex;align-items:center;gap:6px;margin-top:5px;">'+
+            members.map(function(uid){
+              var m=state.studyMembers[uid];
+              var name=m&&m.displayName||'멤버';
+              return '<div style="display:flex;align-items:center;gap:4px;" title="'+esc(name)+'">'+
+                avatar(m&&m.photoURL,name,24)+
+                '<span style="font-size:11px;color:var(--mu);">'+esc(name.split(' ')[0])+'</span>'+
+              '</div>';
+            }).join('')+
+          '</div>'+
+        '</div>'+
+        '<button class="invite-badge" onclick="copyInviteCode(\''+esc(study.inviteCode)+'\')" title="클릭하면 복사">'+
+          '초대코드 '+esc(study.inviteCode)+
+        '</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="study-tabs">'+
+      [['timer','⏱ 타이머'],['todos','✓ 투두'],['calendar','📅 캘린더'],['qa','Q&A']].map(function(t){
+        return '<button class="study-tab'+(state.studyTab===t[0]?' active':'')+'" onclick="state.studyTab=\''+t[0]+'\';render()">'+t[1]+'</button>';
+      }).join('')+
+    '</div>'+
+    '<div class="tcontent">'+
+      (state.studyTab==='timer'?buildTimerTab():'')+
+      (state.studyTab==='todos'?buildTodosTab():'')+
+      (state.studyTab==='calendar'?buildStudyCalendar():'')+
+      (state.studyTab==='qa'?buildQATab():'')+
+    '</div>'+
+  '</div>';
+}
+
+function buildTimerTab(){
+  var elapsed=state.timerElapsed;
+  var todaySecs=state.timerSessions
+    .filter(function(s){
+      if(!s.startedAt)return false;
+      var d=s.startedAt.toDate?s.startedAt.toDate():new Date(s.startedAt);
+      var now=new Date();
+      return d.toDateString()===now.toDateString();
+    })
+    .reduce(function(acc,s){return acc+(s.duration||0);},0);
+
+  return '<div class="timer-wrap">'+
+    '<div id="timer-display" class="timer-display'+(state.timerRunning?' running':'')+(state.timerPaused?' paused':'')+'">'+
+      fmtTime(elapsed)+
+    '</div>'+
+    (state.timerPaused?'<div style="font-size:12px;color:var(--h);margin-top:-8px;">일시정지 중</div>':'')+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">'+
+      (state.timerRunning?
+        '<button class="timer-btn" style="background:'+(state.timerPaused?'#D1FAE5':'#FEF3C7')+';color:'+(state.timerPaused?'#065F46':'#92400E')+'" onclick="timerPause()">'+
+          (state.timerPaused?'▶ 재개':'⏸ 일시정지')+
+        '</button>'+
+        '<button class="timer-btn timer-stop" onclick="timerStop()">■ 종료 및 저장</button>':
+        '<button class="timer-btn timer-start" onclick="timerStart()">▶ 공부 시작</button>')+
+    '</div>'+
+    '<div class="timer-today">오늘 누적 공부 시간 <strong>'+fmtTime(todaySecs)+'</strong></div>'+
+    (state.timerSessions.length?
+      '<div style="width:100%;max-width:340px;">'+
+        '<div style="font-size:12px;font-weight:700;color:var(--mu);margin-bottom:8px;">최근 기록</div>'+
+        state.timerSessions.slice(0,5).map(function(s){
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid var(--br);margin-bottom:6px;">'+
+            '<span style="font-size:12px;color:var(--mu);">'+fmtDate(s.startedAt)+'</span>'+
+            '<span style="font-size:13px;font-weight:700;color:var(--mint);">'+fmtTime(s.duration||0)+'</span>'+
+          '</div>';
+        }).join('')+
+      '</div>':'')+ 
+  '</div>';
+}
+
+function buildTodosTab(){
+  var today=new Date();today.setHours(0,0,0,0);
+  return '<div>'+
+    '<div class="todo-section">'+
+      '<div class="todo-section-title">'+
+        '<span style="background:var(--mintl);color:var(--mint);padding:2px 8px;border-radius:10px;font-size:10px;">공통</span>'+
+        '스터디 공통 투두'+
+      '</div>'+
+      (state.sharedTodos.length?state.sharedTodos.map(function(t){
+        return '<div class="todo-item">'+
+          '<input type="checkbox"'+(t.done?' checked':'')+' onchange="toggleTodo(\''+t.id+'\','+t.done+')">'+
+          '<span class="todo-item-text'+(t.done?' done':'')+'">'+esc(t.title)+'</span>'+
+          '<button class="todo-del" onclick="deleteTodo(\''+t.id+'\')">×</button>'+
+        '</div>';
+      }).join(''):'<div style="font-size:12px;color:var(--h);padding:4px 0;">아직 투두가 없어요</div>')+
+      '<div class="todo-input-row">'+
+        '<input class="todo-input" id="shared-todo-input" placeholder="공통 할 일 추가..." onkeydown="if(event.key===\'Enter\')addTodo(true)">'+
+        '<button class="todo-add-btn" onclick="addTodo(true)">추가</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="todo-section">'+
+      '<div class="todo-section-title">'+
+        '<span style="background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:10px;font-size:10px;">개인</span>'+
+        '나의 투두'+
+      '</div>'+
+      (state.personalTodos.length?state.personalTodos.map(function(t){
+        return '<div class="todo-item">'+
+          '<input type="checkbox"'+(t.done?' checked':'')+' onchange="toggleTodo(\''+t.id+'\','+t.done+')">'+
+          '<span class="todo-item-text'+(t.done?' done':'')+'">'+esc(t.title)+'</span>'+
+          '<button class="todo-del" onclick="deleteTodo(\''+t.id+'\')">×</button>'+
+        '</div>';
+      }).join(''):'<div style="font-size:12px;color:var(--h);padding:4px 0;">아직 투두가 없어요</div>')+
+      '<div class="todo-input-row">'+
+        '<input class="todo-input" id="personal-todo-input" placeholder="개인 할 일 추가..." onkeydown="if(event.key===\'Enter\')addTodo(false)">'+
+        '<button class="todo-add-btn" onclick="addTodo(false)">추가</button>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+function buildStudyCalendar(){
+  var y=state.studyCalY,m=state.studyCalM;
+  var first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
+  var today=new Date();
+  var mn=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+  // Map todos to dates
+  var todosByDate={};
+  var allTodos=state.sharedTodos.concat(state.personalTodos);
+  allTodos.forEach(function(t){
+    if(!t.dueDate)return;
+    var d=t.dueDate.toDate?t.dueDate.toDate():new Date(t.dueDate);
+    if(d.getFullYear()===y&&d.getMonth()===m){
+      var k=d.getDate();
+      if(!todosByDate[k])todosByDate[k]=[];
+      todosByDate[k].push(t);
+    }
+  });
+
+  var cells='';
+  for(var i=0;i<first;i++)cells+='<div></div>';
+  for(var d=1;d<=days;d++){
+    var isT=today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d;
+    var todos=todosByDate[d]||[];
+    var doneCnt=todos.filter(t=>t.done).length;
+    cells+='<div style="min-height:80px;padding:6px;border:1.5px solid '+(isT?'var(--mint)':'var(--br)')+';border-radius:10px;background:'+(isT?'var(--mintl)':'#fff')+';">'+
+      '<div style="font-size:12px;font-weight:'+(isT?700:500)+';color:'+(isT?'var(--mint)':'#444')+';margin-bottom:3px;">'+d+'</div>'+
+      todos.slice(0,3).map(function(t){
+        return '<div style="font-size:10px;padding:2px 5px;border-radius:5px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'+
+          'background:'+(t.done?'#D1FAE5':'var(--mintl)')+';color:'+(t.done?'#065F46':'var(--mint)')+';'+
+          (t.done?'text-decoration:line-through;':'')+'">'+(t.done?'✓ ':'')+esc(t.title)+'</div>';
+      }).join('')+
+      (todos.length>3?'<div style="font-size:9px;color:var(--h);">+'+( todos.length-3)+' 더</div>':'')+
+      (isT&&todos.length>0?'<div style="font-size:9px;color:var(--mint);font-weight:600;margin-top:2px;">'+doneCnt+'/'+todos.length+' 완료</div>':'')+
+    '</div>';
+  }
+
+  return '<div style="padding-bottom:16px;">'+
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">'+
+      '<button onclick="state.studyCalM--;if(state.studyCalM<0){state.studyCalM=11;state.studyCalY--;}render()" class="cal-nbtn">&#8249;</button>'+
+      '<span style="font-weight:700;font-size:16px;">'+y+'년 '+mn[m]+'</span>'+
+      '<button onclick="state.studyCalM++;if(state.studyCalM>11){state.studyCalM=0;state.studyCalY++;}render()" class="cal-nbtn">&#8250;</button>'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px;">'+
+      ['일','월','화','수','목','금','토'].map(d=>'<div style="font-size:11px;text-align:center;color:var(--h);padding:4px 0;font-weight:700;">'+d+'</div>').join('')+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">'+cells+'</div>'+
+  '</div>';
+}
+
+function buildQATab(){
+  var post=state.posts.find(p=>p.id===state.selPost);
+  return '<div>'+
+    '<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">'+
+      '<button class="study-btn primary" style="width:auto;padding:7px 14px;font-size:12px;" onclick="state.showQAForm=!state.showQAForm;render()">'+
+        (state.showQAForm?'✕ 취소':'+ 질문 작성')+
+      '</button>'+
+    '</div>'+
+    (state.showQAForm?
+      '<div class="todo-section" style="margin-bottom:12px;">'+
+        '<div class="todo-section-title">새 질문</div>'+
+        '<div style="display:flex;flex-direction:column;gap:8px;">'+
+          '<input class="todo-input" id="qa-title" placeholder="질문 제목 *">'+
+          '<textarea class="todo-input" id="qa-body" rows="4" placeholder="질문 내용을 자세히 적어주세요" style="resize:vertical;line-height:1.6;"></textarea>'+
+          '<input class="todo-input" id="qa-tags" placeholder="태그 (쉼표 구분, 예: 알고리즘, CS)">'+
+          '<div style="display:flex;align-items:center;gap:8px;">'+
+            '<label style="font-size:12px;color:var(--mu);cursor:pointer;display:flex;align-items:center;gap:5px;padding:7px 12px;border:1.5px solid var(--br);border-radius:9px;background:#F8F9FA;">'+
+              '📎 사진 첨부 <input type="file" accept="image/*" style="display:none;" onchange="handleQAImage(this)">'+
+            '</label>'+
+            '<span style="font-size:11px;color:var(--h);">500KB 이하 권장</span>'+
+          '</div>'+
+          '<img id="qa-img-preview" style="display:none;max-width:100%;border-radius:8px;border:1px solid var(--br);">'+
+          '<button class="study-btn primary" style="padding:10px;" onclick="addPost()">질문 등록</button>'+
+        '</div>'+
+      '</div>':'')+ 
+    (post?buildPostDetail(post):
+      (state.posts.length?state.posts.map(function(p){
+        return '<div class="qa-card" onclick="state.selPost=\''+p.id+'\';_answerCache={};render()">'+
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'+
+            avatar(p.photoURL,p.displayName,24)+
+            '<span style="font-size:12px;font-weight:600;color:var(--text2);">'+esc(p.displayName||'익명')+'</span>'+
+          '</div>'+
+          '<div class="qa-title">'+esc(p.title)+'</div>'+
+          '<div class="qa-meta">'+
+            '답변 '+(p.answerCount||0)+'개'+
+            ((p.tags||[]).length?' · '+p.tags.slice(0,2).map(t=>'<span class="qa-tag">'+esc(t)+'</span>').join(' '):'')+
+          '</div>'+
+        '</div>';
+      }).join(''):
+      '<div class="study-empty"><div style="font-size:28px;opacity:0.2;">Q</div><div>아직 질문이 없어요<br>첫 질문을 작성해보세요!</div></div>')
+    )+'</div>';
+}
+
+var _answerCache={};
+function buildPostDetail(post){
+  var answers=_answerCache[post.id]||[];
+  if(!_answerCache[post.id]){
+    loadAnswers(post.id).then(function(ans){_answerCache[post.id]=ans;if(state.page==='study')render();});
+  }
+  return '<div>'+
+    '<button onclick="state.selPost=null;state.showAnsForm=false;render()" style="border:none;background:none;color:var(--mint);font-size:13px;cursor:pointer;margin-bottom:10px;">← 목록으로</button>'+
+    '<div class="cbox">'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">'+
+        avatar(post.photoURL,post.displayName,30)+
+        '<div>'+
+          '<div style="font-size:13px;font-weight:600;color:var(--text1);">'+esc(post.displayName||'익명')+'</div>'+
+        '</div>'+
+      '</div>'+
+      ((post.tags||[]).length?'<div style="margin-bottom:8px;">'+post.tags.map(t=>'<span class="qa-tag" style="margin-right:4px;">'+esc(t)+'</span>').join('')+'</div>':'')+
+      '<div style="font-size:15px;font-weight:700;margin-bottom:8px;">'+esc(post.title)+'</div>'+
+      '<div style="font-size:13px;color:var(--text2);white-space:pre-wrap;line-height:1.7;">'+esc(post.body||'')+'</div>'+
+      (post.imageBase64?'<img src="'+post.imageBase64+'" style="max-width:100%;border-radius:8px;margin-top:10px;border:1px solid var(--br);">':'')+
+    '</div>'+
+    '<div style="font-size:12px;font-weight:700;color:var(--mu);margin:12px 0 8px;">답변 '+answers.length+'개</div>'+
+    answers.map(function(a){
+      var isMine=currentUser&&a.uid===currentUser.uid;
+      var isAuthor=currentUser&&post.uid===currentUser.uid;
+      return '<div class="answer-box'+(a.isAccepted?' accepted':'')+'">'+
+        (a.isAccepted?'<div style="font-size:10px;color:var(--mint);font-weight:700;margin-bottom:6px;">✓ 채택된 답변</div>':'')+
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">'+
+          avatar(a.photoURL,a.displayName,22)+
+          '<span style="font-size:12px;font-weight:600;color:var(--text2);">'+esc(a.displayName||'익명')+'</span>'+
+        '</div>'+
+        '<div style="font-size:13px;color:var(--text2);white-space:pre-wrap;line-height:1.7;">'+esc(a.body)+'</div>'+
+        (a.solutionUrl?'<a href="'+esc(a.solutionUrl)+'" target="_blank" style="font-size:11px;color:var(--mint);display:inline-block;margin-top:6px;padding:4px 10px;border:1px solid var(--mintm);border-radius:6px;text-decoration:none;background:var(--mintl);">풀이 보기 ↗</a>':'')+
+        (!a.isAccepted&&!isMine&&isAuthor?
+          '<div style="margin-top:8px;">'+
+            '<button onclick="acceptAnswer(\''+a.id+'\')" style="border:none;background:var(--mintl);color:var(--mint);padding:4px 12px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;">채택하기</button>'+
+          '</div>':'')+
+      '</div>';
+    }).join('')+
+    '<div style="margin-top:14px;">'+
+      '<button class="study-btn" style="padding:9px;margin-bottom:8px;" onclick="state.showAnsForm=!state.showAnsForm;render()">'+
+        (state.showAnsForm?'✕ 취소':'+ 답변 작성')+
+      '</button>'+
+      (state.showAnsForm?
+        '<div class="todo-section">'+
+          '<textarea class="todo-input" id="ans-body" rows="4" placeholder="답변 내용 *" style="margin-bottom:8px;resize:vertical;line-height:1.6;"></textarea>'+
+          '<input class="todo-input" id="ans-url" placeholder="풀이 링크 (GitHub / Notion 등)" style="margin-bottom:8px;">'+
+          '<button class="study-btn primary" style="padding:10px;width:100%;" onclick="addAnswer()">답변 등록</button>'+
+        '</div>':'')+
+    '</div>'+
+  '</div>';
+}
+
+function buildStudyModal(){
+  var isCreate=state.studyModal==='create';
+  return '<div class="study-modal-overlay">'+
+    '<div class="study-modal">'+
+      '<div class="study-modal-title">'+(isCreate?'새 스터디 만들기':'초대코드로 참여')+'</div>'+
+      (isCreate?
+        '<div style="margin-bottom:12px;"><div class="mlabel">스터디 이름</div><input id="new-study-name" class="minput" placeholder="예: 코딩테스트 스터디" autofocus></div>':
+        '<div style="margin-bottom:12px;"><div class="mlabel">초대코드 6자리</div><input id="join-code" class="minput" placeholder="예: ABC123" style="letter-spacing:3px;text-transform:uppercase;" autofocus></div>')+
+      '<div class="modal-ftr">'+
+        '<button class="btn-cancel-m" onclick="state.studyModal=null;render()">취소</button>'+
+        '<button class="btn-save-m" onclick="'+(isCreate?'createStudy()':'joinStudy()')+'">'+
+          (isCreate?'만들기':'참여하기')+
+        '</button>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
 }
 
 function selectStudy(id){

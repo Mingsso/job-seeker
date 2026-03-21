@@ -173,6 +173,7 @@ textarea{resize:vertical;line-height:1.7;}
 .timer-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;gap:20px;}
 .timer-display{font-size:52px;font-weight:800;letter-spacing:2px;color:var(--text1);font-variant-numeric:tabular-nums;line-height:1;}
 .timer-display.running{color:var(--mint);}
+.timer-display.paused{color:var(--h);}
 .timer-btn{padding:12px 36px;border-radius:40px;border:none;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.15s;}
 .timer-start{background:var(--mint);color:#fff;}
 .timer-start:hover{background:#33a478;}
