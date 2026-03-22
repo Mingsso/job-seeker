@@ -416,7 +416,7 @@ var STAR_KEYS=[
 
 /* ====== STATE ====== */
 var state={
-  page:'tracker',jobs:[],arts:[],exps:[],
+  page:localStorage.getItem('last_page')||'tracker',jobs:[],arts:[],exps:[],
   selId:null,tab:'기본정보',view:'list',
   cat:'전체',astats:[],sort:'deadline',search:'',
   modal:null,editJob:null,delConfirm:false,
@@ -1321,6 +1321,24 @@ async function addTodo(isShared){
   document.getElementById(inputId).value='';
 }
 
+async function addTodoForDate(isShared){
+  var inputId=isShared?'cal-shared-input':'cal-personal-input';
+  var inp=document.getElementById(inputId);
+  if(!inp)return;
+  var val=inp.value.trim();
+  if(!val)return;
+  var d=new Date(state.studyCalY,state.studyCalM,state.selCalDate);
+  d.setHours(0,0,0,0);
+  await db.collection('todos').add({
+    title:val,done:false,
+    studyId:isShared?state.selStudy:null,
+    uid:isShared?null:currentUser.uid,
+    dueDate:d,
+    createdAt:new Date()
+  });
+  inp.value='';
+}
+
 async function toggleTodo(id,done){
   await db.collection('todos').doc(id).update({done:!done});
 }
@@ -1545,40 +1563,68 @@ function buildTimerTab(){
 }
 
 function buildTodosTab(){
-  var today=new Date();today.setHours(0,0,0,0);
+  var allTodos=state.sharedTodos.concat(state.personalTodos);
+
+  // Group by date
+  var byDate={};
+  allTodos.forEach(function(t){
+    var key='날짜 없음';
+    if(t.dueDate){
+      var d=t.dueDate.toDate?t.dueDate.toDate():new Date(t.dueDate);
+      key=d.getFullYear()+'.'+(d.getMonth()+1+'').padStart(2,'0')+'.'+(''+d.getDate()).padStart(2,'0');
+    }
+    if(!byDate[key])byDate[key]=[];
+    byDate[key].push(t);
+  });
+
+  var sortedKeys=Object.keys(byDate).sort(function(a,b){
+    if(a==='날짜 없음')return 1;
+    if(b==='날짜 없음')return-1;
+    return a.localeCompare(b);
+  });
+
+  var today=new Date();
+  var todayKey=today.getFullYear()+'.'+(today.getMonth()+1+'').padStart(2,'0')+'.'+(''+today.getDate()).padStart(2,'0');
+
+  function todoRow(t){
+    var isShared=!!t.studyId;
+    var color=isShared?'var(--mint)':'#8B5CF6';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--br);">'+
+      '<input type="checkbox"'+(t.done?' checked':'')+' data-id="'+t.id+'" data-done="'+t.done+'" onchange="calTodoToggle(this)" style="width:16px;height:16px;accent-color:'+color+';cursor:pointer;flex-shrink:0;">'+
+      '<span style="flex:1;font-size:14px;color:'+(t.done?'var(--h)':'var(--text1)')+(t.done?';text-decoration:line-through':'')+' ;">'+esc(t.title)+'</span>'+
+      '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:'+(isShared?'var(--mintl)':'#EDE9FE')+';color:'+(isShared?'var(--mint)':'#6D28D9')+';">'+(isShared?'공통':'개인')+'</span>'+
+      '<button data-id="'+t.id+'" onclick="calTodoDel(this)" style="border:none;background:none;color:var(--h);font-size:16px;cursor:pointer;padding:2px 4px;border-radius:4px;">×</button>'+
+    '</div>';
+  }
+
   return '<div>'+
-    '<div class="todo-section">'+
-      '<div class="todo-section-title">'+
-        '<span style="background:var(--mintl);color:var(--mint);padding:2px 8px;border-radius:10px;font-size:10px;">공통</span>'+
-        '스터디 공통 투두'+
-      '</div>'+
-      (state.sharedTodos.length?state.sharedTodos.map(function(t){
-        return '<div class="todo-item">'+
-          '<input type="checkbox"'+(t.done?' checked':'')+' onchange="toggleTodo(\''+t.id+'\','+t.done+')">'+
-          '<span class="todo-item-text'+(t.done?' done':'')+'">'+esc(t.title)+'</span>'+
-          '<button class="todo-del" onclick="deleteTodo(\''+t.id+'\')">×</button>'+
+    (sortedKeys.length===0?
+      '<div style="font-size:13px;color:var(--h);text-align:center;padding:24px;">등록된 투두가 없어요</div>':
+      sortedKeys.map(function(key){
+        var isToday=key===todayKey;
+        var todos=byDate[key];
+        var done=todos.filter(function(t){return t.done;}).length;
+        return '<div style="margin-bottom:12px;">'+
+          '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:'+(isToday?'var(--mint)':'var(--br)')+';border-radius:10px 10px 0 0;">'+
+            '<span style="font-size:13px;font-weight:700;color:'+(isToday?'#fff':'var(--text2)')+';">'+key+(isToday?' 📅 오늘':'')+'</span>'+
+            '<span style="font-size:12px;color:'+(isToday?'rgba(255,255,255,0.8)':'var(--h)')+';">'+done+'/'+todos.length+' 완료</span>'+
+          '</div>'+
+          '<div style="background:#fff;border:1px solid var(--br);border-top:none;border-radius:0 0 10px 10px;padding:0 12px;">'+
+            todos.map(todoRow).join('')+
+          '</div>'+
         '</div>';
-      }).join(''):'<div style="font-size:12px;color:var(--h);padding:4px 0;">아직 투두가 없어요</div>')+
-      '<div class="todo-input-row">'+
-        '<input class="todo-input" id="shared-todo-input" placeholder="공통 할 일 추가..." onkeydown="if(event.key===\'Enter\')addTodo(true)">'+
-        '<button class="todo-add-btn" onclick="addTodo(true)">추가</button>'+
-      '</div>'+
-    '</div>'+
-    '<div class="todo-section">'+
-      '<div class="todo-section-title">'+
-        '<span style="background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:10px;font-size:10px;">개인</span>'+
-        '나의 투두'+
-      '</div>'+
-      (state.personalTodos.length?state.personalTodos.map(function(t){
-        return '<div class="todo-item">'+
-          '<input type="checkbox"'+(t.done?' checked':'')+' onchange="toggleTodo(\''+t.id+'\','+t.done+')">'+
-          '<span class="todo-item-text'+(t.done?' done':'')+'">'+esc(t.title)+'</span>'+
-          '<button class="todo-del" onclick="deleteTodo(\''+t.id+'\')">×</button>'+
-        '</div>';
-      }).join(''):'<div style="font-size:12px;color:var(--h);padding:4px 0;">아직 투두가 없어요</div>')+
-      '<div class="todo-input-row">'+
-        '<input class="todo-input" id="personal-todo-input" placeholder="개인 할 일 추가..." onkeydown="if(event.key===\'Enter\')addTodo(false)">'+
-        '<button class="todo-add-btn" onclick="addTodo(false)">추가</button>'+
+      }).join(''))+
+    '<div class="todo-section" style="margin-top:4px;">'+
+      '<div class="todo-section-title" style="font-size:13px;">오늘 투두 추가</div>'+
+      '<div style="display:flex;flex-direction:column;gap:6px;">'+
+        '<div style="display:flex;gap:6px;">'+
+          '<input class="todo-input" id="shared-todo-input" placeholder="공통 할 일..." onkeydown="if(event.key===\'Enter\')addTodo(true)">'+
+          '<button class="todo-add-btn" onclick="addTodo(true)">공통</button>'+
+        '</div>'+
+        '<div style="display:flex;gap:6px;">'+
+          '<input class="todo-input" id="personal-todo-input" placeholder="개인 할 일..." onkeydown="if(event.key===\'Enter\')addTodo(false)">'+
+          '<button class="todo-add-btn" style="background:#8B5CF6;" onclick="addTodo(false)">개인</button>'+
+        '</div>'+
       '</div>'+
     '</div>'+
   '</div>';
@@ -1601,21 +1647,26 @@ function buildCalDetail(selTodos,sharedSel,personalSel,m){
     '</div>';
   }
   return '<div style="margin-top:16px;background:#fff;border-radius:14px;border:1.5px solid var(--mint);padding:16px;">'+
-    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">'+
-      '<div style="font-size:14px;font-weight:700;color:var(--mint);">'+(m+1)+'월 '+state.selCalDate+'일 투두</div>'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'+
+      '<div style="font-size:15px;font-weight:700;color:var(--mint);">'+(m+1)+'월 '+state.selCalDate+'일 투두</div>'+
       '<button onclick="state.selCalDate=null;render()" style="border:none;background:none;color:var(--h);font-size:20px;cursor:pointer;line-height:1;">×</button>'+
     '</div>'+
-    (selTodos.length===0?'<div style="font-size:13px;color:var(--h);text-align:center;padding:12px 0;">이 날 투두가 없어요</div>':'')+
-    (sharedSel.length?
-      '<div style="margin-bottom:12px;">'+
-        '<div style="font-size:11px;font-weight:700;color:var(--mu);margin-bottom:8px;display:flex;align-items:center;gap:5px;"><span style="background:var(--mintl);color:var(--mint);padding:2px 8px;border-radius:10px;font-size:10px;">공통</span>스터디 투두</div>'+
-        sharedSel.map(function(t){return todoRow(t,'var(--mint)');}).join('')+
-      '</div>':'')+
-    (personalSel.length?
-      '<div>'+
-        '<div style="font-size:11px;font-weight:700;color:var(--mu);margin-bottom:8px;display:flex;align-items:center;gap:5px;"><span style="background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:10px;font-size:10px;">개인</span>나의 투두</div>'+
-        personalSel.map(function(t){return todoRow(t,'#8B5CF6');}).join('')+
-      '</div>':'')+
+    '<div style="margin-bottom:14px;">'+
+      '<div style="font-size:12px;font-weight:700;color:var(--mu);margin-bottom:8px;display:flex;align-items:center;gap:5px;"><span style="background:var(--mintl);color:var(--mint);padding:2px 8px;border-radius:10px;font-size:11px;">공통</span>스터디 투두</div>'+
+      (sharedSel.length?sharedSel.map(function(t){return todoRow(t,'var(--mint)');}).join(''):'<div style="font-size:13px;color:var(--h);padding:4px 0;">없어요</div>')+
+      '<div style="display:flex;gap:6px;margin-top:8px;">'+
+        '<input id="cal-shared-input" class="todo-input" placeholder="공통 투두 추가..." onkeydown="if(event.key===\'Enter\')addTodoForDate(true)" style="font-size:13px;">'+
+        '<button onclick="addTodoForDate(true)" class="todo-add-btn">추가</button>'+
+      '</div>'+
+    '</div>'+
+    '<div>'+
+      '<div style="font-size:12px;font-weight:700;color:var(--mu);margin-bottom:8px;display:flex;align-items:center;gap:5px;"><span style="background:#EDE9FE;color:#6D28D9;padding:2px 8px;border-radius:10px;font-size:11px;">개인</span>나의 투두</div>'+
+      (personalSel.length?personalSel.map(function(t){return todoRow(t,'#8B5CF6');}).join(''):'<div style="font-size:13px;color:var(--h);padding:4px 0;">없어요</div>')+
+      '<div style="display:flex;gap:6px;margin-top:8px;">'+
+        '<input id="cal-personal-input" class="todo-input" placeholder="개인 투두 추가..." onkeydown="if(event.key===\'Enter\')addTodoForDate(false)" style="font-size:13px;">'+
+        '<button onclick="addTodoForDate(false)" class="todo-add-btn">추가</button>'+
+      '</div>'+
+    '</div>'+
   '</div>';
 }
 
@@ -1939,7 +1990,7 @@ function attachAll(){
 }
 
 /* ====== ACTIONS ====== */
-function navTo(p){state.page=p;render();}
+function navTo(p){state.page=p;localStorage.setItem('last_page',p);render();}
 function toggleView(){state.view=state.view==='cal'?'list':'cal';render();}
 function selectJob(id){state.selId=id;state.tab='기본정보';state.delConfirm=false;render();}
 function calSel(id){state.selId=id;state.tab='기본정보';state.delConfirm=false;state.view='list';render();}
